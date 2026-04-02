@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Login</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="center-screen">
+
+    <main class="login-container">
+        
+        <header class="logo-section">
+            <div class="logo-icon">📚</div> 
+            <h1>BOOKS</h1>
+            <p style="margin-top: -10px; color: #666; font-size: 0.9rem;">Library Owner Login</p>
+        </header>
+
+        <form class="login-form" id="owner-login-form">
+            
+            <div class="input-group">
+                <input type="text" id="owner-name" placeholder="Library Name" required>
+            </div>
+
+            <div class="input-group">
+                <input type="password" id="owner-password" placeholder="Password" required>
+            </div>
+
+            <button type="submit" class="btn-primary">Log in</button>
+            
+        </form>
+
+        <footer class="auth-links">
+            <p>No Account? <a href="owner-signup.html">Create one</a></p>
+            <p style="margin-top: 10px; font-size: 0.85rem;">
+                Regular User? <a href="login.html">Login here</a>
+            </p>
+        </footer>
+
+    </main>
+
+    <script type="module" src="java/owner-login.js"></script>
+</body>
+</html>

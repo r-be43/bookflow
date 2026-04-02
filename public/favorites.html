@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <title>My Favorites — LibraShelf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head>
+<body class="home-page home-page--premium mobile-premium-page" data-auth-page="private">
+    <div class="premium-bg-mesh home-bg-mesh" aria-hidden="true"></div>
+
+    <nav class="top-nav top-nav--premium top-nav--inner">
+        <a href="index.html" class="premium-nav-back" aria-label="Back to home">
+            <span class="material-icons-outlined">arrow_back</span>
+        </a>
+        <div class="nav-brand-premium">
+            <span class="nav-brand-icon" aria-hidden="true">❤️</span>
+            <span class="nav-brand-text">Favorites</span>
+        </div>
+        <span class="material-icons-outlined icon-btn icon-btn--premium" aria-hidden="true">favorite</span>
+    </nav>
+
+    <main class="home-container home-container--premium">
+        <div id="home-loading" class="catalog-loading" role="status" aria-live="polite">
+            <span class="catalog-spinner" aria-hidden="true"></span>
+            <p>Loading favorites...</p>
+        </div>
+
+        <section class="home-browse-section" aria-labelledby="favorites-heading">
+            <div class="section-title-row">
+                <h1 id="favorites-heading" class="home-section-title">
+                    Saved books <span class="favorites-count" id="fav-count">0</span>
+                </h1>
+                <button type="button" class="clear-all-btn clear-all-btn--premium" id="clear-all" style="display: none;">
+                    Clear all
+                </button>
+            </div>
+        </section>
+
+        <section class="books-section books-section--premium" id="favorites-section" style="display: none;">
+            <div class="section-header section-header--premium">
+                <h2>Your Favorites</h2>
+                <span class="section-tag section-tag--teal">Saved</span>
+            </div>
+            <div class="books-scroll-view books-scroll-view--premium" id="favorites-grid"></div>
+        </section>
+
+        <section class="empty-favorites empty-favorites--premium" id="empty-state" style="display: none;">
+            <span class="material-icons-outlined">favorite_border</span>
+            <h2>Your favorites list is empty</h2>
+            <p>Save books you love, and they will appear here instantly.</p>
+            <a href="index.html" class="browse-btn browse-btn--premium">Browse Books</a>
+        </section>
+    </main>
+
+    <nav class="bottom-nav bottom-nav--premium">
+        <a href="index.html" class="nav-item">
+            <span class="material-icons-outlined">home</span>
+            <span>Home</span>
+        </a>
+        <a href="favorites.html" class="nav-item active">
+            <span class="material-icons-outlined">favorite</span>
+            <span>Favorites</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <span class="material-icons-outlined">person_outline</span>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <script type="module" src="java/favorites.js"></script>
+    <script type="module" src="java/auth.js"></script>
+</body>
+</html>

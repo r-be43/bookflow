@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <title>Login — LibraShelf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="home-page home-page--premium mobile-premium-page" data-auth-page="guest-only">
+    <div class="premium-bg-mesh home-bg-mesh" aria-hidden="true"></div>
+
+    <nav class="top-nav top-nav--premium top-nav--inner">
+        <a href="index.html" class="premium-nav-back" aria-label="Back to home">
+            <span class="material-icons-outlined">arrow_back</span>
+        </a>
+        <div class="nav-brand-premium">
+            <span class="nav-brand-icon" aria-hidden="true">📚</span>
+            <span class="nav-brand-text">LibraShelf</span>
+        </div>
+        <span class="material-icons-outlined icon-btn icon-btn--premium" aria-hidden="true">login</span>
+    </nav>
+
+    <main class="home-container home-container--premium">
+        <section class="content-card" style="max-width: 520px; margin: 8px auto 24px;">
+            <div class="section-title-row" style="margin-bottom: 8px;">
+                <h1 class="home-section-title" style="font-size: 1.45rem;">Welcome Back</h1>
+                <span class="section-tag section-tag--teal">Secure Login</span>
+            </div>
+            <p class="prose" style="margin-bottom: 16px;">Sign in to reserve books, manage your profile, and track your favorites.</p>
+
+            <div id="auth-message" class="auth-message" style="display:none;"></div>
+
+            <form class="login-form" id="user-login-form">
+                <div class="input-group">
+                    <input type="email" id="user-email" placeholder="Email address" autocomplete="email" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="user-password" placeholder="Password" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
+            </form>
+
+            <footer class="auth-links">
+                <p>New to LibraShelf? <a href="signup.html">Create Account</a></p>
+                <p style="margin-top: 10px; font-size: 0.85rem;">
+                    Library Owner? <a href="owner-login.html">Owner Login</a>
+                </p>
+            </footer>
+        </section>
+    </main>
+
+    <script type="module" src="java/auth.js"></script>
+</body>
+</html>

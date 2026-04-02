@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <title>Profile — LibraShelf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head>
+<body class="home-page home-page--premium mobile-premium-page" data-auth-page="private">
+    <div class="premium-bg-mesh home-bg-mesh" aria-hidden="true"></div>
+
+    <nav class="top-nav top-nav--premium top-nav--inner">
+        <a href="index.html" class="premium-nav-back" aria-label="Back to home">
+            <span class="material-icons-outlined">arrow_back</span>
+        </a>
+        <div class="nav-brand-premium">
+            <span class="nav-brand-icon" aria-hidden="true">👤</span>
+            <span class="nav-brand-text">Profile</span>
+        </div>
+        <span class="material-icons-outlined icon-btn icon-btn--premium" aria-hidden="true">notifications</span>
+    </nav>
+
+    <main class="profile-container premium-page-main">
+
+        <!-- Profile Hero -->
+        <section class="profile-hero profile-hero--premium-glass">
+            <div class="profile-avatar-wrapper">
+                <img src="https://api.dicebear.com/7.x/initials/svg?seed=User" 
+                     alt="Profile" 
+                     class="profile-avatar" 
+                     id="profile-avatar">
+                <div class="avatar-edit">
+                    <span class="material-icons-outlined">edit</span>
+                </div>
+            </div>
+            <h2 class="profile-name" id="profile-name">Loading...</h2>
+            <p class="profile-email" id="profile-email">Loading...</p>
+
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="stat-favorites">0</span>
+                    <span class="stat-label">Favorites</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number" id="stat-reserved">0</span>
+                    <span class="stat-label">Reserved</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number" id="stat-read">0</span>
+                    <span class="stat-label">Read</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="profile-glass-shell">
+            <!-- Tabs -->
+            <div class="profile-tabs">
+                <button class="tab-btn active" data-tab="history">
+                    <span class="material-icons-outlined">auto_stories</span>
+                    Reading History
+                </button>
+                <button class="tab-btn" data-tab="reserved">
+                    <span class="material-icons-outlined">bookmark</span>
+                    Reserved
+                </button>
+                <button class="tab-btn" data-tab="settings">
+                    <span class="material-icons-outlined">settings</span>
+                    Settings
+                </button>
+            </div>
+
+            <!-- Tab: Favorites -->
+            <div class="tab-content active" id="tab-history">
+                <div class="profile-books-grid" id="profile-history-grid">
+                    <!-- تتعبى ديناميكياً -->
+                </div>
+                <div class="empty-tab" id="empty-history" style="display:none;">
+                    <span class="material-icons-outlined">auto_stories</span>
+                    <p>No reading history yet</p>
+                    <a href="index.html" class="browse-btn">Browse Books</a>
+                </div>
+            </div>
+
+            <!-- Tab: Reserved -->
+            <div class="tab-content" id="tab-reserved">
+                <div class="reserved-list" id="reserved-list">
+                    <!-- تتعبى ديناميكياً -->
+                </div>
+                <div class="empty-tab" id="empty-reserved" style="display:none;">
+                    <span class="material-icons-outlined">bookmark_border</span>
+                    <p>No reservations yet</p>
+                    <a href="index.html" class="browse-btn">Browse Books</a>
+                </div>
+            </div>
+
+            <!-- Tab: Settings -->
+            <div class="tab-content" id="tab-settings">
+                <div class="settings-list">
+
+                <!-- Edit Profile -->
+                <div class="settings-group">
+                    <h3 class="settings-group-title">Account Information</h3>
+
+                    <div class="settings-item">
+                        <div class="settings-icon" style="background:#e3f2fd; color:#2196f3;">
+                            <span class="material-icons-outlined">person</span>
+                        </div>
+                        <div class="settings-text">
+                            <h4>Full Name</h4>
+                            <p id="settings-name">-</p>
+                        </div>
+                        <span class="material-icons-outlined settings-arrow">chevron_right</span>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-icon" style="background:#e8f5e9; color:#27ae60;">
+                            <span class="material-icons-outlined">email</span>
+                        </div>
+                        <div class="settings-text">
+                            <h4>Email</h4>
+                            <p id="settings-email">-</p>
+                        </div>
+                        <span class="material-icons-outlined settings-arrow">chevron_right</span>
+                    </div>
+                </div>
+
+                <!-- Preferences -->
+                <div class="settings-group">
+                    <h3 class="settings-group-title">Preferences</h3>
+
+                    <div class="settings-item">
+                        <div class="settings-icon" style="background:#f3e5f5; color:#9c27b0;">
+                            <span class="material-icons-outlined">notifications</span>
+                        </div>
+                        <div class="settings-text">
+                            <h4>Notifications</h4>
+                            <p>Manage your alerts</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="notif-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-icon" style="background:#fff3e0; color:#ff9800;">
+                            <span class="material-icons-outlined">language</span>
+                        </div>
+                        <div class="settings-text">
+                            <h4>Language</h4>
+                            <p>English</p>
+                        </div>
+                        <span class="material-icons-outlined settings-arrow">chevron_right</span>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="settings-group">
+                    <h3 class="settings-group-title">Account</h3>
+
+                    <button type="button" class="settings-item" id="logout-btn" data-auth-logout>
+                        <div class="settings-icon" style="background:#fce4ec; color:#e74c3c;">
+                            <span class="material-icons-outlined">logout</span>
+                        </div>
+                        <div class="settings-text">
+                            <h4 style="color:#e74c3c;">Logout</h4>
+                            <p>Sign out of your account</p>
+                        </div>
+                        <span class="material-icons-outlined settings-arrow">chevron_right</span>
+                    </button>
+                </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="bottom-nav bottom-nav--premium">
+        <a href="index.html" class="nav-item">
+            <span class="material-icons-outlined">home</span>
+            <span>Home</span>
+        </a>
+        <a href="favorites.html" class="nav-item">
+            <span class="material-icons-outlined">favorite_border</span>
+            <span>Favorites</span>
+        </a>
+        <a href="profile.html" class="nav-item active">
+            <span class="material-icons-outlined">person</span>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <script type="module" src="java/profile.js"></script>
+    <script type="module" src="java/auth.js"></script>
+</body>
+</html>

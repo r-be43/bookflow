@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Dashboard | LibraShelf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="css/super-admin.css">
+</head>
+<body class="sa-theme-light">
+    <div class="sa-app is-locked" id="sa-app">
+        <aside class="sa-sidebar" id="sa-sidebar" aria-label="Sidebar navigation">
+            <div class="sa-brand">
+                <span class="sa-brand-mark">LS</span>
+                <div>
+                    <strong>LibraShelf</strong>
+                    <small>Super Admin</small>
+                </div>
+            </div>
+
+            <nav class="sa-nav">
+                <a class="sa-nav-link active" href="#">
+                    <span class="material-icons-outlined">dashboard</span>
+                    Dashboard
+                </a>
+                <a class="sa-nav-link" href="#">
+                    <span class="material-icons-outlined">store</span>
+                    Vendors Management
+                </a>
+                <a class="sa-nav-link" href="#">
+                    <span class="material-icons-outlined">menu_book</span>
+                    Books Moderation
+                </a>
+                <a class="sa-nav-link" href="#">
+                    <span class="material-icons-outlined">settings</span>
+                    Settings
+                </a>
+            </nav>
+
+            <a class="sa-nav-link sa-logout" href="#">
+                <span class="material-icons-outlined">logout</span>
+                Logout
+            </a>
+        </aside>
+
+        <main class="sa-main">
+            <header class="sa-header">
+                <div class="sa-header-left">
+                    <button class="sa-icon-btn sa-menu-btn" id="menu-toggle" type="button" aria-label="Open sidebar">
+                        <span class="material-icons-outlined">menu</span>
+                    </button>
+                    <div class="sa-search">
+                        <span class="material-icons-outlined">search</span>
+                        <input type="search" placeholder="Search vendors, books, reports...">
+                    </div>
+                </div>
+
+                <div class="sa-header-right">
+                    <button class="sa-icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode">
+                        <span class="material-icons-outlined" id="theme-icon">dark_mode</span>
+                    </button>
+                    <button class="sa-icon-btn" type="button" aria-label="Notifications">
+                        <span class="material-icons-outlined">notifications</span>
+                    </button>
+                    <div class="sa-user">
+                        <div class="sa-avatar">SA</div>
+                        <div>
+                            <strong>Platform Owner</strong>
+                            <small>Super Admin</small>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="sa-hero">
+                <h1>Platform Overview</h1>
+                <p>Manage all vendors, moderate listings, and monitor marketplace performance.</p>
+            </section>
+
+            <section class="sa-stats" aria-label="Key metrics">
+                <article class="sa-card stat">
+                    <div class="stat-head">
+                        <p>Total Vendors</p>
+                        <span class="material-icons-outlined">storefront</span>
+                    </div>
+                    <h3 id="kpi-total-vendors" class="shimmer">Loading</h3>
+                    <small>+34 this week</small>
+                </article>
+                <article class="sa-card stat">
+                    <div class="stat-head">
+                        <p>Total Books</p>
+                        <span class="material-icons-outlined">library_books</span>
+                    </div>
+                    <h3 id="kpi-total-books" class="shimmer">Loading</h3>
+                    <small>+2,941 this month</small>
+                </article>
+                <article class="sa-card stat">
+                    <div class="stat-head">
+                        <p>Active Users</p>
+                        <span class="material-icons-outlined">groups</span>
+                    </div>
+                    <h3>12,907</h3>
+                    <small>+5.1% weekly</small>
+                </article>
+                <article class="sa-card stat">
+                    <div class="stat-head">
+                        <p>Total Revenue (Platform Cut)</p>
+                        <span class="material-icons-outlined">payments</span>
+                    </div>
+                    <h3>$482,390</h3>
+                    <small>+11.4% monthly</small>
+                </article>
+            </section>
+
+            <section class="sa-card sa-table-card">
+                <div class="sa-table-head">
+                    <div>
+                        <h2>Recent Platform Activity</h2>
+                        <p>Latest books submitted by vendors</p>
+                    </div>
+                </div>
+
+                <div class="sa-table-wrap">
+                    <table class="sa-table">
+                        <thead>
+                            <tr>
+                                <th>Book Image / Title</th>
+                                <th>Vendor Name</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sa-recent-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="sa-card sa-table-card">
+                <div class="sa-table-head">
+                    <div>
+                        <h2>Vendors Management</h2>
+                        <p>Bulk control vendor visibility across all their books</p>
+                    </div>
+                    <select id="sa-vendors-filter" class="sa-select" aria-label="Filter vendors">
+                        <option value="all">All Vendors</option>
+                        <option value="active">Has Active Books</option>
+                        <option value="suspended">Fully Suspended</option>
+                    </select>
+                </div>
+
+                <div class="sa-table-wrap">
+                    <table class="sa-table">
+                        <thead>
+                            <tr>
+                                <th>Vendor Phone</th>
+                                <th>Total Books</th>
+                                <th>Active Books</th>
+                                <th>Suspended Books</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sa-vendors-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+    <div id="mobile-backdrop" class="hidden" aria-hidden="true"></div>
+    <div id="super-admin-login-overlay" class="sa-login-overlay" role="dialog" aria-modal="true" aria-labelledby="sa-login-title">
+        <div class="sa-login-card">
+            <h2 id="sa-login-title">Super Admin Access</h2>
+            <p>Enter the admin password to open the dashboard.</p>
+            <div class="sa-login-field">
+                <input id="sa-admin-password" type="password" placeholder="Enter admin password" autocomplete="current-password">
+            </div>
+            <button id="sa-login-btn" type="button">Login</button>
+            <p id="sa-login-error" class="sa-login-error" aria-live="polite"></p>
+        </div>
+    </div>
+    <script type="module" src="./java/super-admin.js"></script>
+</body>
+</html>

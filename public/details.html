@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="Browse book details, synopsis, and reserve titles at LibraShelf.">
+    <title>Book Details</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head>
+<body class="details-page details-premium">
+    <div class="details-bg-mesh" aria-hidden="true"></div>
+
+    <nav class="details-nav details-nav--premium">
+        <a href="index.html" class="back-btn back-btn--premium" aria-label="Back to catalog">
+            <span class="material-icons-outlined">arrow_back</span>
+        </a>
+        <span class="details-nav-brand">LibraShelf</span>
+    </nav>
+
+    <main class="details-main">
+        <article class="details-article">
+            <!-- Split hero: cover + primary info -->
+            <div class="details-split">
+                <aside class="details-cover-col">
+                    <div class="book-cover-stage">
+                        <div class="book-cover-3d">
+                            <div class="book-cover-spine" aria-hidden="true"></div>
+                            <div class="book-cover-face">
+                                <img id="detail-img" src="" alt="" class="book-cover-img">
+                                <div class="book-cover-shine" aria-hidden="true"></div>
+                            </div>
+                        </div>
+                        <p class="cover-caption" id="detail-isbn"></p>
+                    </div>
+                </aside>
+
+                <div class="details-info-col">
+                    <div class="details-breadcrumb">
+                        <span>Books</span>
+                        <span class="bc-sep">/</span>
+                        <span id="detail-category">—</span>
+                    </div>
+                    <div class="details-title-row">
+                        <h1 class="details-title" id="detail-title">Loading…</h1>
+                        <button type="button"
+                                id="detail-favorite-btn"
+                                class="detail-favorite-btn"
+                                data-detail-favorite
+                                data-book-id=""
+                                aria-label="Toggle favorite">
+                            <span class="material-icons-outlined">favorite_border</span>
+                        </button>
+                    </div>
+                    <p class="details-author-line">By <span id="detail-author">—</span></p>
+
+                    <div class="details-meta-row">
+                        <div class="rating-block" id="detail-rating-block" aria-label="Average rating">
+                            <div class="stars-inline" id="detail-stars"></div>
+                            <span class="rating-value" id="detail-rating-value">—</span>
+                            <span class="rating-label">avg. rating</span>
+                        </div>
+                        <div class="meta-divider"></div>
+                        <div class="meta-item">
+                            <span class="material-icons-outlined meta-ico">calendar_today</span>
+                            <div>
+                                <span class="meta-label">Published</span>
+                                <span class="meta-val" id="detail-pub-date">—</span>
+                            </div>
+                        </div>
+                        <div class="meta-item">
+                            <span class="material-icons-outlined meta-ico">business</span>
+                            <div>
+                                <span class="meta-label">Publisher</span>
+                                <span class="meta-val" id="detail-publisher">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="genre-tags" id="detail-genre-tags"></div>
+
+                    <div class="availability-pill" id="detail-availability">
+                        <span class="material-icons-outlined">inventory_2</span>
+                        <span id="detail-stock-label">—</span>
+                    </div>
+
+                    <div class="details-action-buttons" style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button type="button" class="btn-primary btn-primary--premium" id="buy-btn">
+                            Buy Now - <span id="book-price">N/A</span>
+                        </button>
+                        <button type="button" class="btn-secondary btn-secondary--premium" id="sample-btn">
+                            Read Sample
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Synopsis & author -->
+            <section class="content-card">
+                <h2 class="section-heading">Synopsis</h2>
+                <div class="synopsis-body">
+                    <p class="prose" id="detail-synopsis-1"></p>
+                    <p class="prose" id="detail-synopsis-2"></p>
+                </div>
+            </section>
+
+            <section class="content-card content-card--author">
+                <h2 class="section-heading">About the author</h2>
+                <p class="prose author-bio" id="detail-author-bio"></p>
+            </section>
+
+            <!-- Libraries -->
+            <section class="content-card libraries-section">
+                <div class="section-head-row">
+                    <h2 class="section-heading">Available at libraries</h2>
+                    <span class="library-count-badge" id="library-count">—</span>
+                </div>
+                <div id="libraries-list" class="libraries-grid"></div>
+            </section>
+
+            <!-- Related -->
+            <section class="related-section">
+                <div class="section-head-row">
+                    <h2 class="section-heading">Customers also borrowed</h2>
+                    <a href="index.html" class="related-see-all">Browse all</a>
+                </div>
+                <div class="related-grid" id="related-books-grid"></div>
+            </section>
+        </article>
+    </main>
+
+    <!-- Reserve Modal (IDs preserved for booking.js / details.js) -->
+    <div class="modal-overlay modal-overlay--premium" id="reserve-modal">
+        <div class="modal-content modal-content--premium">
+            <div class="modal-header modal-header--premium">
+                <div>
+                    <p class="modal-kicker">Complete your reservation</p>
+                    <h3>Reserve this title</h3>
+                </div>
+                <span class="material-icons-outlined modal-close" id="modal-close" role="button" tabindex="0">close</span>
+            </div>
+
+            <div class="modal-body">
+                <div class="book-preview book-preview--premium">
+                    <img src="" alt="" id="modal-book-cover">
+                    <div>
+                        <h4 id="modal-book-title">—</h4>
+                        <p id="modal-book-author">—</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="library-select">Select library</label>
+                    <select id="library-select" class="form-select">
+                        <option value="">Choose a library…</option>
+                        <option value="Central Library">Central Library</option>
+                        <option value="City Library">City Library</option>
+                        <option value="University Library">University Library</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="pickup-date">Pickup date</label>
+                    <input type="date" id="pickup-date" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="userName">Your name</label>
+                    <input type="text" id="userName" class="form-input" placeholder="Enter your name" autocomplete="name">
+                </div>
+
+                <div class="form-group">
+                    <label for="user-phone">Phone number</label>
+                    <input type="tel" id="user-phone" class="form-input" placeholder="Enter your phone">
+                </div>
+            </div>
+
+            <div class="modal-footer modal-footer--premium">
+                <button type="button" class="btn-secondary btn-secondary--premium" id="cancel-btn">Cancel</button>
+                <button type="button" class="btn-primary btn-primary--premium" id="bookBtn">Book Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="java/details.js"></script>
+</body>
+</html>

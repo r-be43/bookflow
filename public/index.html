@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="LibraShelf — discover books, browse by genre, and reserve titles at your library.">
+    <title>LibraShelf — Discover Books</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <style>
+        .category-chips {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .category-chips::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-btn {
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+
+        .no-books-found {
+            width: 100%;
+            text-align: center;
+            padding: 18px 12px;
+            border-radius: 12px;
+            color: #475569;
+            background: #f8fafc;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="home-page home-page--premium mobile-premium-page">
+    <div class="premium-bg-mesh home-bg-mesh" aria-hidden="true"></div>
+
+    <!-- Top bar -->
+    <nav class="top-nav top-nav--premium">
+        <div class="nav-brand-premium">
+            <span class="nav-brand-icon" aria-hidden="true">📚</span>
+            <span class="nav-brand-text">LibraShelf</span>
+        </div>
+
+        <div class="top-nav-actions" style="display:flex; align-items:center; gap:10px;">
+            <a href="login.html"
+               class="category-chip"
+               data-auth="guest"
+               style="padding:8px 14px; font-size:0.78rem;">
+                Login
+            </a>
+
+            <a href="profile.html"
+               class="category-chip active"
+               data-auth="user"
+               style="display:none; padding:8px 14px; font-size:0.78rem;">
+                <span data-auth-username>Profile</span>
+            </a>
+
+            <button type="button"
+                    class="category-chip"
+                    data-auth="user"
+                    data-auth-logout
+                    style="display:none; padding:8px 14px; font-size:0.78rem;">
+                Logout
+            </button>
+
+            <div class="notif-wrapper" data-auth="user" style="display:none;">
+                <span class="material-icons-outlined icon-btn icon-btn--premium" id="notif-btn">notifications</span>
+                <span class="notif-badge" id="notif-badge">3</span>
+
+                <div class="notification-dropdown notification-dropdown--premium" id="notif-dropdown">
+                    <div class="notif-header">
+                        <h3>Notifications</h3>
+                        <span id="mark-all-read">Mark all as read</span>
+                    </div>
+                    <div class="notif-list">
+                        <div class="notif-item unread">
+                            <div class="notif-icon">
+                                <span class="material-icons-outlined">book</span>
+                            </div>
+                            <div class="notif-text">
+                                <h4>New Book Available</h4>
+                                <p>Harry Potter is now available at Central Library</p>
+                                <span class="notif-time">2 mins ago</span>
+                            </div>
+                        </div>
+                        <div class="notif-item unread">
+                            <div class="notif-icon" style="background:#e8f5e9; color:#0d9488;">
+                                <span class="material-icons-outlined">check_circle</span>
+                            </div>
+                            <div class="notif-text">
+                                <h4>Reservation Confirmed</h4>
+                                <p>Your reservation for 1984 has been confirmed</p>
+                                <span class="notif-time">1 hour ago</span>
+                            </div>
+                        </div>
+                        <div class="notif-item">
+                            <div class="notif-icon" style="background:#fff3e0; color:#ea580c;">
+                                <span class="material-icons-outlined">schedule</span>
+                            </div>
+                            <div class="notif-text">
+                                <h4>Return Reminder</h4>
+                                <p>Please return The Hobbit by tomorrow</p>
+                                <span class="notif-time">3 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="notif-item">
+                            <div class="notif-icon" style="background:#fce4ec; color:#e63946;">
+                                <span class="material-icons-outlined">favorite</span>
+                            </div>
+                            <div class="notif-text">
+                                <h4>Wishlist Update</h4>
+                                <p>Atomic Habits is back in stock!</p>
+                                <span class="notif-time">Yesterday</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="notif-footer">
+                        <a href="#">View All Notifications</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <header class="home-hero">
+        <div class="home-hero__bg" aria-hidden="true"></div>
+        <div class="home-hero__content">
+            <p class="home-hero__eyebrow">Curated for readers</p>
+            <h1 class="home-hero__title">Your next chapter starts here</h1>
+            <p class="home-hero__subtitle">Search thousands of titles, explore genres, and reserve books in real time — a storefront experience for your library.</p>
+
+            <div class="home-hero__search search-bar-premium">
+                <span class="material-icons-outlined search-bar-premium__icon">search</span>
+                <input type="search" id="search-input" class="search-bar-premium__input" placeholder="Search by title, author, or genre…" autocomplete="off" enterkeyhint="search">
+            </div>
+        </div>
+    </header>
+
+    <main class="home-container home-container--premium">
+        <div id="home-loading" class="catalog-loading" role="status" aria-live="polite">
+            <span class="catalog-spinner" aria-hidden="true"></span>
+            <p>Loading catalog...</p>
+        </div>
+
+        <!-- Browse by category -->
+        <section class="home-browse-section" aria-labelledby="browse-categories-heading">
+            <div class="section-title-row">
+                <h2 id="browse-categories-heading" class="home-section-title">Browse by genre</h2>
+                <span class="home-section-hint">Tap to filter</span>
+            </div>
+            <div id="categories-container" class="category-chips" role="toolbar" aria-label="Book categories"></div>
+        </section>
+
+        <section class="books-section books-section--premium">
+            <div class="section-header section-header--premium">
+                <h2>Trending now</h2>
+                <span class="section-tag">Hot</span>
+            </div>
+            <div class="books-scroll-view books-scroll-view--premium" id="trending-container"></div>
+        </section>
+
+        <section class="books-section books-section--premium">
+            <div class="section-header section-header--premium">
+                <h2>Newly added</h2>
+                <span class="section-tag section-tag--teal">New</span>
+            </div>
+            <div class="books-scroll-view books-scroll-view--premium" id="new-container"></div>
+        </section>
+
+        <section class="books-section books-section--premium">
+            <div class="section-header section-header--premium">
+                <h2>Most popular</h2>
+                <span class="section-tag section-tag--amber">Top rated</span>
+            </div>
+            <div class="books-scroll-view books-scroll-view--premium" id="popular-container"></div>
+        </section>
+
+        <section class="books-section books-section--premium">
+            <div class="section-header section-header--premium">
+                <h2>Arabic books</h2>
+                <span class="section-tag section-tag--muted">العربية</span>
+            </div>
+            <div class="books-scroll-view books-scroll-view--premium" id="arabic-container"></div>
+        </section>
+
+        <section class="books-section books-section--premium">
+            <div class="section-header section-header--premium">
+                <h2>World literature</h2>
+                <span class="section-tag section-tag--muted">English</span>
+            </div>
+            <div class="books-scroll-view books-scroll-view--premium" id="foreign-container"></div>
+        </section>
+    </main>
+
+    <nav class="bottom-nav bottom-nav--premium">
+        <a href="index.html" class="nav-item active">
+            <span class="material-icons-outlined">home</span>
+            <span>Home</span>
+        </a>
+        <a href="favorites.html" class="nav-item">
+            <span class="material-icons-outlined">favorite_border</span>
+            <span>Favorites</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <span class="material-icons-outlined">person_outline</span>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <script type="module" src="java/home.js"></script>
+    <script type="module" src="java/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Library</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="center-screen">
+
+    <main class="login-container">
+        
+        <header class="logo-section">
+            <div class="logo-icon">📚</div> 
+            <h1>BOOKS</h1>
+            <p style="margin-top: -10px; color: #666; font-size: 0.9rem;">Register Your Library</p>
+        </header>
+
+        <form class="login-form" id="owner-signup-form">
+            
+            <div class="input-group">
+                <input type="text" id="owner-name" placeholder="Library Name" required>
+            </div>
+
+            <div class="input-group">
+                <input type="tel" id="owner-phone" placeholder="Phone Number" required>
+            </div>
+
+            <div class="input-group">
+                <input type="text" id="owner-location" placeholder="Location" required>
+            </div>
+
+            <div class="input-group">
+                <input type="password" id="owner-password" placeholder="Password" required>
+            </div>
+
+            <button type="submit" class="btn-primary">Sign Up</button>
+            
+        </form>
+
+        <footer class="auth-links">
+            <p>Already have an account? <a href="owner-login.html">Log in</a></p>
+        </footer>
+
+    </main>
+
+    <script type="module" src="java/owner-signup.js"></script>
+</body>
+</html>

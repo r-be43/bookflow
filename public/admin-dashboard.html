@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="admin-nav">
+        <div class="nav-logo">📚 Admin Panel</div>
+        <div class="admin-user">
+            <span id="admin-name">Loading...</span>
+            <button class="logout-btn" id="admin-logout">
+                <span class="material-icons-outlined">logout</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="admin-container">
+
+        <!-- Enhanced Statistics Cards -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #e3f2fd; color: #2196f3;">
+                    <span class="material-icons-outlined">trending_up</span>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-active">0</h3>
+                    <p>Active Reservations</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #e8f5e9; color: #27ae60;">
+                    <span class="material-icons-outlined">library_books</span>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-available">0</h3>
+                    <p>Available Books</p>
+                </div>
+            </div>
+
+            <div class="stat-card most-requested">
+                <div class="stat-icon" style="background: #f3e5f5; color: #9c27b0;">
+                    <span class="material-icons-outlined">star</span>
+                </div>
+                <div class="stat-info">
+                    <h3 id="most-requested-title">-</h3>
+                    <p>Most Requested Book</p>
+                    <span class="request-count" id="most-requested-count">0 requests</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tabs -->
+        <div class="admin-tabs">
+            <button class="admin-tab-btn active" data-tab="reservations">
+                <span class="material-icons-outlined">bookmark</span>
+                Reservations
+            </button>
+            <button class="admin-tab-btn" data-tab="inventory">
+                <span class="material-icons-outlined">inventory_2</span>
+                Inventory
+            </button>
+        </div>
+
+        <!-- Tab: Reservations Management -->
+        <section class="admin-tab-content active" id="tab-reservations">
+            <div class="section-header-admin">
+                <h2>Reservations Management</h2>
+                <div class="filter-btns">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="active">Active</button>
+                    <button class="filter-btn" data-filter="completed">Completed</button>
+                </div>
+            </div>
+
+            <!-- Table View -->
+            <div class="table-container">
+                <table class="admin-table" id="reservations-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Book</th>
+                            <th>Library</th>
+                            <th>Pickup Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reservations-tbody">
+                        <!-- الحجوزات تتعبى هنا -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" id="empty-reservations" style="display:none;">
+                <span class="material-icons-outlined">inbox</span>
+                <p>No reservations yet</p>
+            </div>
+        </section>
+
+        <!-- Tab: Inventory Management -->
+        <section class="admin-tab-content" id="tab-inventory">
+            <div class="section-header-admin">
+                <h2>Inventory Management</h2>
+                <button class="btn-primary" id="add-book-btn">
+                    <span class="material-icons-outlined">add</span>
+                    Add Book
+                </button>
+            </div>
+
+            <!-- Inventory Table -->
+            <div class="table-container">
+                <table class="admin-table" id="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Book</th>
+                            <th>Category</th>
+                            <th>Author</th>
+                            <th>Price</th>
+                            <th>Stock Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-tbody">
+                        <!-- الكتب تتعبى هنا -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" id="empty-inventory" style="display:none;">
+                <span class="material-icons-outlined">library_books</span>
+                <p>No books in inventory</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Edit Price Modal -->
+    <div class="modal-overlay" id="price-modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>Edit Price</h3>
+                <span class="material-icons-outlined modal-close" onclick="closePriceModal()">close</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Book Title</label>
+                    <input type="text" id="price-book-title" class="form-input" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <input type="text" id="book-price" class="form-input" placeholder="e.g., Free, $5, $10">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closePriceModal()">Cancel</button>
+                <button class="btn-primary" onclick="savePriceChange()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact User Modal -->
+    <div class="modal-overlay" id="contact-modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>Contact User</h3>
+                <span class="material-icons-outlined modal-close" onclick="closeContactModal()">close</span>
+            </div>
+            <div class="modal-body">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <span class="material-icons-outlined">person</span>
+                        <div>
+                            <p class="label">Name</p>
+                            <p class="value" id="contact-name">-</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <span class="material-icons-outlined">phone</span>
+                        <div>
+                            <p class="label">Phone</p>
+                            <p class="value" id="contact-phone">-</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <span class="material-icons-outlined">menu_book</span>
+                        <div>
+                            <p class="label">Book</p>
+                            <p class="value" id="contact-book">-</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="quick-actions">
+                    <a href="#" id="call-link" class="quick-btn call">
+                        <span class="material-icons-outlined">call</span>
+                        Call
+                    </a>
+                    <a href="#" id="sms-link" class="quick-btn sms">
+                        <span class="material-icons-outlined">message</span>
+                        SMS
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Book Modal -->
+    <div class="modal-overlay" id="book-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="book-modal-title">Add New Book</h3>
+                <span class="material-icons-outlined modal-close" onclick="closeBookModal()">close</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Book Title</label>
+                    <input type="text" id="book-title" class="form-input" placeholder="Enter book title" required>
+                </div>
+                <div class="form-group">
+                    <label>Author</label>
+                    <input type="text" id="book-author" class="form-input" placeholder="Enter author name" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="book-category" class="form-select">
+                        <option value="">Choose category...</option>
+                        <option value="Fiction">Fiction</option>
+                        <option value="Translated Fiction">Translated Fiction</option>
+                        <option value="Self-Help">Self-Help</option>
+                        <option value="Psychology">Psychology</option>
+                        <option value="History">History</option>
+                        <option value="Philosophy">Philosophy</option>
+                        <option value="Sci-Fi &amp; Fantasy">Sci-Fi &amp; Fantasy</option>
+                        <option value="Horror &amp; Thriller">Horror &amp; Thriller</option>
+                        <option value="Biography">Biography</option>
+                        <option value="Children &amp; YA">Children &amp; YA</option>
+                        <option value="Business">Business</option>
+                        <option value="Religion &amp; Spirituality">Religion &amp; Spirituality</option>
+                        <option value="Poetry">Poetry</option>
+                        <option value="Politics">Politics</option>
+                        <option value="Technology &amp; Programming">Technology &amp; Programming</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="book-description" class="form-textarea" rows="3" placeholder="Enter book description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Cover URL</label>
+                    <input type="url" id="book-image" class="form-input" placeholder="Enter cover URL" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price</label>
+                        <input type="number" id="book-price-add" class="form-input" min="0" step="0.01" placeholder="0.00" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Sample PDF URL</label>
+                    <input type="url" id="book-sample-url" class="form-input" placeholder="https://.../sample.pdf">
+                </div>
+                <div class="form-group">
+                    <label>Vendor Phone (WhatsApp)</label>
+                    <input type="text" id="book-vendor-phone" class="form-input" placeholder="+201000000000" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeBookModal()">Cancel</button>
+                <button class="btn-primary" id="save-book-btn">Save Book</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="java/admin.js"></script>
+</body>
+</html>
