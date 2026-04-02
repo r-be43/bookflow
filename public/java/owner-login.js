@@ -1,5 +1,7 @@
-// owner-login.js
-import { safeStorage } from './data.js';
+import { onAuthStateChanged, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { auth } from './firebase-client.js';
+import { getVendorProfileById } from './vendors-firestore-service.js';
+import { safeStorage } from './storage.js';
 
 window.addEventListener('DOMContentLoaded', () => {
     checkAlreadyLoggedIn();
@@ -9,63 +11,56 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkAlreadyLoggedIn() {
-    const user = safeStorage.get('currentUser');
-    if (user) {
-        try {
-            const userData = JSON.parse(user);
-            if (userData.type === 'owner') {
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) return;
+        const vendor = await getVendorProfileById(user.uid);
+        if (vendor) {
+            safeStorage.set('currentUser', JSON.stringify({
+                type: 'owner',
+                vendorId: vendor.vendorId || user.uid,
+                name: vendor.storeName || user.displayName || 'Vendor',
+                phone: vendor.phone || '',
+                email: vendor.email || user.email || '',
+            }));
+            if ((vendor.status || 'active') === 'active') {
                 window.location.href = 'admin-dashboard.html';
             }
-        } catch (e) {}
-    }
+        }
+    });
 }
 
-function handleOwnerLogin(e) {
+async function handleOwnerLogin(e) {
     e.preventDefault();
     
-    const name = document.getElementById('owner-name').value.trim();
+    const email = document.getElementById('owner-email').value.trim().toLowerCase();
     const password = document.getElementById('owner-password').value;
 
-    // Demo owner للتجربة
-    const demoOwners = [
-        { 
-            name: 'Central Library', 
-            password: 'admin123', 
-            phone: '1234567890',
-            location: 'Downtown, Baghdad'
+    try {
+        const credential = await signInWithEmailAndPassword(auth, email, password);
+        const vendor = await getVendorProfileById(credential.user.uid);
+        if (!vendor) {
+            showMessage('This account is not registered as a vendor.', 'error');
+            return;
         }
-    ];
+        if ((vendor.status || 'active') !== 'active') {
+            showMessage('Vendor account is suspended. Contact platform admin.', 'error');
+            return;
+        }
 
-    // الحصول على الـ owners المسجلين
-    let owners = [];
-    const storedOwners = safeStorage.get('owners');
-    if (storedOwners) {
-        try {
-            owners = JSON.parse(storedOwners);
-        } catch (e) {}
-    }
-
-    const allOwners = [...demoOwners, ...owners];
-
-    const owner = allOwners.find(o => o.name === name && o.password === password);
-
-    if (owner) {
-        const currentUser = {
+        safeStorage.set('currentUser', JSON.stringify({
             type: 'owner',
-            name: owner.name,
-            phone: owner.phone,
-            location: owner.location
-        };
-        
-        safeStorage.set('currentUser', JSON.stringify(currentUser));
-        
+            vendorId: vendor.vendorId || credential.user.uid,
+            name: vendor.storeName || credential.user.displayName || 'Vendor',
+            phone: vendor.phone || '',
+            email: vendor.email || credential.user.email || email,
+        }));
+
         showMessage('Login successful! Redirecting to dashboard...', 'success');
-        
         setTimeout(() => {
             window.location.href = 'admin-dashboard.html';
-        }, 1000);
-    } else {
-        showMessage('Invalid library name or password', 'error');
+        }, 900);
+    } catch (error) {
+        showMessage('Invalid email or password', 'error');
     }
 }
 

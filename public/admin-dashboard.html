@@ -3,234 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Vendor Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin-dashboard.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 </head>
-<body>
-    <!-- Top Navigation -->
-    <nav class="admin-nav">
-        <div class="nav-logo">📚 Admin Panel</div>
-        <div class="admin-user">
-            <span id="admin-name">Loading...</span>
-            <button class="logout-btn" id="admin-logout">
-                <span class="material-icons-outlined">logout</span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Main Container -->
-    <main class="admin-container">
-
-        <!-- Enhanced Statistics Cards -->
-        <section class="stats-section">
-            <div class="stat-card">
-                <div class="stat-icon" style="background: #e3f2fd; color: #2196f3;">
-                    <span class="material-icons-outlined">trending_up</span>
-                </div>
-                <div class="stat-info">
-                    <h3 id="stat-active">0</h3>
-                    <p>Active Reservations</p>
-                </div>
+<body class="vendor-admin-page">
+    <div class="ad-layout">
+        <aside class="ad-sidebar">
+            <div class="ad-brand">Vendor Panel</div>
+            <div class="ad-store">
+                Store
+                <strong id="ad-vendor-name-side">Loading...</strong>
             </div>
-
-            <div class="stat-card">
-                <div class="stat-icon" style="background: #e8f5e9; color: #27ae60;">
-                    <span class="material-icons-outlined">library_books</span>
-                </div>
-                <div class="stat-info">
-                    <h3 id="stat-available">0</h3>
-                    <p>Available Books</p>
-                </div>
-            </div>
-
-            <div class="stat-card most-requested">
-                <div class="stat-icon" style="background: #f3e5f5; color: #9c27b0;">
-                    <span class="material-icons-outlined">star</span>
-                </div>
-                <div class="stat-info">
-                    <h3 id="most-requested-title">-</h3>
-                    <p>Most Requested Book</p>
-                    <span class="request-count" id="most-requested-count">0 requests</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Tabs -->
-        <div class="admin-tabs">
-            <button class="admin-tab-btn active" data-tab="reservations">
-                <span class="material-icons-outlined">bookmark</span>
-                Reservations
-            </button>
-            <button class="admin-tab-btn" data-tab="inventory">
-                <span class="material-icons-outlined">inventory_2</span>
-                Inventory
-            </button>
-        </div>
-
-        <!-- Tab: Reservations Management -->
-        <section class="admin-tab-content active" id="tab-reservations">
-            <div class="section-header-admin">
-                <h2>Reservations Management</h2>
-                <div class="filter-btns">
-                    <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="active">Active</button>
-                    <button class="filter-btn" data-filter="completed">Completed</button>
-                </div>
-            </div>
-
-            <!-- Table View -->
-            <div class="table-container">
-                <table class="admin-table" id="reservations-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Book</th>
-                            <th>Library</th>
-                            <th>Pickup Date</th>
-                            <th>Time</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reservations-tbody">
-                        <!-- الحجوزات تتعبى هنا -->
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="empty-state" id="empty-reservations" style="display:none;">
-                <span class="material-icons-outlined">inbox</span>
-                <p>No reservations yet</p>
-            </div>
-        </section>
-
-        <!-- Tab: Inventory Management -->
-        <section class="admin-tab-content" id="tab-inventory">
-            <div class="section-header-admin">
-                <h2>Inventory Management</h2>
-                <button class="btn-primary" id="add-book-btn">
-                    <span class="material-icons-outlined">add</span>
-                    Add Book
+            <nav class="ad-nav">
+                <a href="#" class="ad-nav-link active" data-ad-nav="dashboard">
+                    <span class="material-icons-outlined">dashboard</span>Dashboard
+                </a>
+                <a href="#" class="ad-nav-link" data-ad-nav="reservations">
+                    <span class="material-icons-outlined">bookmark</span>Reservations
+                </a>
+                <a href="#" class="ad-nav-link" data-ad-nav="inventory">
+                    <span class="material-icons-outlined">inventory_2</span>Inventory
+                </a>
+                <button id="ad-logout-btn" class="ad-logout-btn" type="button">
+                    <span class="material-icons-outlined">logout</span>Logout
                 </button>
-            </div>
+            </nav>
+        </aside>
 
-            <!-- Inventory Table -->
-            <div class="table-container">
-                <table class="admin-table" id="inventory-table">
-                    <thead>
-                        <tr>
-                            <th>Book</th>
-                            <th>Category</th>
-                            <th>Author</th>
-                            <th>Price</th>
-                            <th>Stock Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventory-tbody">
-                        <!-- الكتب تتعبى هنا -->
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="empty-state" id="empty-inventory" style="display:none;">
-                <span class="material-icons-outlined">library_books</span>
-                <p>No books in inventory</p>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Edit Price Modal -->
-    <div class="modal-overlay" id="price-modal">
-        <div class="modal-content modal-small">
-            <div class="modal-header">
-                <h3>Edit Price</h3>
-                <span class="material-icons-outlined modal-close" onclick="closePriceModal()">close</span>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Book Title</label>
-                    <input type="text" id="price-book-title" class="form-input" readonly>
+        <main class="ad-main">
+            <header class="ad-topbar">
+                <div>
+                    <h1>Welcome, <span id="ad-vendor-name">Loading...</span></h1>
+                    <p>Unified vendor dashboard connected to live Firestore data</p>
                 </div>
-                <div class="form-group">
-                    <label>Price</label>
-                    <input type="text" id="book-price" class="form-input" placeholder="e.g., Free, $5, $10">
+            </header>
+
+            <section class="ad-kpis ad-section" id="ad-section-dashboard">
+                <div class="ad-card">
+                    <div class="label">Available Books</div>
+                    <h3 id="ad-kpi-books">0</h3>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closePriceModal()">Cancel</button>
-                <button class="btn-primary" onclick="savePriceChange()">Save</button>
-            </div>
-        </div>
+                <div class="ad-card">
+                    <div class="label">Active Reservations</div>
+                    <h3 id="ad-kpi-active">0</h3>
+                </div>
+                <div class="ad-card">
+                    <div class="label">Completed Reservations</div>
+                    <h3 id="ad-kpi-completed">0</h3>
+                </div>
+            </section>
+
+            <section class="ad-section" id="ad-section-reservations">
+                <div class="ad-section-head">
+                    <h2>Reservations Management</h2>
+                    <div class="ad-actions">
+                        <button class="ad-btn ad-filter-btn active" type="button" data-res-filter="all">All</button>
+                        <button class="ad-btn ad-filter-btn" type="button" data-res-filter="active">Active</button>
+                        <button class="ad-btn ad-filter-btn" type="button" data-res-filter="completed">Completed</button>
+                    </div>
+                </div>
+                <div class="ad-table-wrap">
+                    <table class="ad-table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Book Title</th>
+                                <th>Reservation Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ad-reservations-body"></tbody>
+                    </table>
+                </div>
+                <p id="ad-reservations-empty" class="ad-empty" style="display:none;">No reservations found.</p>
+            </section>
+
+            <section class="ad-section" id="ad-section-inventory">
+                <div class="ad-section-head">
+                    <h2>Inventory Management</h2>
+                    <button id="ad-add-book-btn" class="ad-btn ad-btn-primary" type="button">
+                        <span class="material-icons-outlined" style="font-size:17px;vertical-align:middle;">add</span>
+                        Add Book
+                    </button>
+                </div>
+                <div class="ad-table-wrap inventory-scroll">
+                    <table class="ad-table">
+                        <thead>
+                            <tr>
+                                <th>Book</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ad-inventory-body"></tbody>
+                    </table>
+                </div>
+                <p id="ad-inventory-empty" class="ad-empty" style="display:none;">No books found.</p>
+                <div class="ad-paging">
+                    <button id="ad-inventory-prev" class="ad-btn" type="button">Prev</button>
+                    <span id="ad-inventory-page-info">Page 1 of 1</span>
+                    <button id="ad-inventory-next" class="ad-btn" type="button">Next</button>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <!-- Contact User Modal -->
-    <div class="modal-overlay" id="contact-modal">
-        <div class="modal-content modal-small">
-            <div class="modal-header">
-                <h3>Contact User</h3>
-                <span class="material-icons-outlined modal-close" onclick="closeContactModal()">close</span>
-            </div>
-            <div class="modal-body">
-                <div class="contact-info">
-                    <div class="contact-item">
-                        <span class="material-icons-outlined">person</span>
-                        <div>
-                            <p class="label">Name</p>
-                            <p class="value" id="contact-name">-</p>
-                        </div>
-                    </div>
-                    <div class="contact-item">
-                        <span class="material-icons-outlined">phone</span>
-                        <div>
-                            <p class="label">Phone</p>
-                            <p class="value" id="contact-phone">-</p>
-                        </div>
-                    </div>
-                    <div class="contact-item">
-                        <span class="material-icons-outlined">menu_book</span>
-                        <div>
-                            <p class="label">Book</p>
-                            <p class="value" id="contact-book">-</p>
-                        </div>
-                    </div>
+    <div id="ad-book-modal" class="ad-modal" aria-hidden="true">
+        <div class="ad-modal-card">
+            <h3 style="margin:0 0 12px;">Book Form</h3>
+            <form id="ad-book-form" class="ad-grid">
+                <div class="ad-field">
+                    <label for="ad-book-title">Title</label>
+                    <input id="ad-book-title" type="text" required>
                 </div>
-                <div class="quick-actions">
-                    <a href="#" id="call-link" class="quick-btn call">
-                        <span class="material-icons-outlined">call</span>
-                        Call
-                    </a>
-                    <a href="#" id="sms-link" class="quick-btn sms">
-                        <span class="material-icons-outlined">message</span>
-                        SMS
-                    </a>
+                <div class="ad-field">
+                    <label for="ad-book-author">Author</label>
+                    <input id="ad-book-author" type="text" required>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add/Edit Book Modal -->
-    <div class="modal-overlay" id="book-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="book-modal-title">Add New Book</h3>
-                <span class="material-icons-outlined modal-close" onclick="closeBookModal()">close</span>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Book Title</label>
-                    <input type="text" id="book-title" class="form-input" placeholder="Enter book title" required>
-                </div>
-                <div class="form-group">
-                    <label>Author</label>
-                    <input type="text" id="book-author" class="form-input" placeholder="Enter author name" required>
-                </div>
-                <div class="form-group">
-                    <label>Category</label>
-                    <select id="book-category" class="form-select">
-                        <option value="">Choose category...</option>
+                <div class="ad-field">
+                    <label for="ad-book-category">Category</label>
+                    <select id="ad-book-category" required>
+                        <option value="">Choose category</option>
                         <option value="Fiction">Fiction</option>
                         <option value="Translated Fiction">Translated Fiction</option>
                         <option value="Self-Help">Self-Help</option>
@@ -248,36 +146,76 @@
                         <option value="Technology &amp; Programming">Technology &amp; Programming</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="book-description" class="form-textarea" rows="3" placeholder="Enter book description" required></textarea>
+                <div class="ad-field">
+                    <label for="ad-book-price">Price</label>
+                    <input id="ad-book-price" type="number" min="0" step="0.01" required>
                 </div>
-                <div class="form-group">
-                    <label>Cover URL</label>
-                    <input type="url" id="book-image" class="form-input" placeholder="Enter cover URL" required>
+                <div class="ad-field full">
+                    <label for="ad-book-cover-url">Cover URL</label>
+                    <input id="ad-book-cover-url" type="url" required>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Price</label>
-                        <input type="number" id="book-price-add" class="form-input" min="0" step="0.01" placeholder="0.00" required>
-                    </div>
+                <div class="ad-field">
+                    <label for="ad-book-status">Status</label>
+                    <select id="ad-book-status">
+                        <option value="available">available</option>
+                        <option value="out_of_stock">out_of_stock</option>
+                    </select>
                 </div>
-                <div class="form-group">
-                    <label>Sample PDF URL</label>
-                    <input type="url" id="book-sample-url" class="form-input" placeholder="https://.../sample.pdf">
+                <div class="ad-field">
+                    <label for="ad-book-sample-url">Sample URL</label>
+                    <input id="ad-book-sample-url" type="url">
                 </div>
-                <div class="form-group">
-                    <label>Vendor Phone (WhatsApp)</label>
-                    <input type="text" id="book-vendor-phone" class="form-input" placeholder="+201000000000" required>
+                <div class="ad-field full">
+                    <label for="ad-book-description">Description</label>
+                    <textarea id="ad-book-description" rows="4"></textarea>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeBookModal()">Cancel</button>
-                <button class="btn-primary" id="save-book-btn">Save Book</button>
+            </form>
+            <div class="ad-modal-actions">
+                <button id="ad-close-book-modal" class="ad-btn" type="button">Close</button>
+                <button id="ad-cancel-book-modal" class="ad-btn" type="button">Cancel</button>
+                <button id="ad-save-book-btn" class="ad-btn ad-btn-primary" type="button">Save</button>
             </div>
         </div>
     </div>
 
-    <script type="module" src="java/admin.js"></script>
+    <div id="ad-confirm-modal" class="ad-modal" aria-hidden="true">
+        <div class="ad-modal-card" style="width:min(480px,92vw);">
+            <h3 style="margin:0 0 10px;">Confirm Action</h3>
+            <p id="ad-confirm-message" style="margin:0;color:#475569;">Are you sure?</p>
+            <div class="ad-modal-actions">
+                <button id="ad-confirm-cancel" class="ad-btn" type="button">Cancel</button>
+                <button id="ad-confirm-submit" class="ad-btn ad-btn-primary" type="button">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ad-quick-edit-modal" class="ad-modal" aria-hidden="true">
+        <div class="ad-modal-card" style="width:min(520px,92vw);">
+            <h3 style="margin:0 0 10px;">Quick Edit Book</h3>
+            <form id="ad-quick-edit-form" class="ad-grid">
+                <div class="ad-field full">
+                    <label for="ad-quick-edit-title">Book</label>
+                    <input id="ad-quick-edit-title" type="text" readonly>
+                </div>
+                <div class="ad-field">
+                    <label for="ad-quick-edit-price">Price</label>
+                    <input id="ad-quick-edit-price" type="number" min="0" step="0.01" required>
+                </div>
+                <div class="ad-field">
+                    <label for="ad-quick-edit-status">Status</label>
+                    <select id="ad-quick-edit-status">
+                        <option value="available">available</option>
+                        <option value="out_of_stock">out_of_stock</option>
+                    </select>
+                </div>
+            </form>
+            <div class="ad-modal-actions">
+                <button id="ad-quick-edit-cancel" class="ad-btn" type="button">Cancel</button>
+                <button id="ad-quick-edit-save" class="ad-btn ad-btn-primary" type="button">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="java/admin-dashboard.js"></script>
 </body>
 </html>

@@ -1,20 +1,22 @@
-// owner-signup.js
-import { safeStorage } from './data.js';
+import { createUserWithEmailAndPassword, updateProfile } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { auth } from './firebase-client.js';
+import { upsertVendorProfile } from './vendors-firestore-service.js';
 
 window.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('owner-signup-form');
     form.addEventListener('submit', handleOwnerSignup);
 });
 
-function handleOwnerSignup(e) {
+async function handleOwnerSignup(e) {
     e.preventDefault();
     
-    const name = document.getElementById('owner-name').value.trim();
+    const storeName = document.getElementById('owner-name').value.trim();
+    const email = document.getElementById('owner-email').value.trim().toLowerCase();
     const phone = document.getElementById('owner-phone').value.trim();
-    const location = document.getElementById('owner-location').value.trim();
     const password = document.getElementById('owner-password').value;
 
-    if (!name || !phone || !location || !password) {
+    if (!storeName || !email || !phone || !password) {
         showMessage('Please fill all fields', 'error');
         return;
     }
@@ -24,30 +26,28 @@ function handleOwnerSignup(e) {
         return;
     }
 
-    let owners = [];
-    const storedOwners = safeStorage.get('owners');
-    if (storedOwners) {
-        try {
-            owners = JSON.parse(storedOwners);
-        } catch (e) {}
+    try {
+        const credential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(credential.user, { displayName: storeName });
+        await upsertVendorProfile(credential.user.uid, {
+            vendorId: credential.user.uid,
+            storeName,
+            email,
+            phone,
+            status: 'active',
+            createdAt: serverTimestamp(),
+        });
+
+        showMessage('Library registered successfully! Redirecting to dashboard...', 'success');
+        setTimeout(() => {
+            window.location.href = 'admin-dashboard.html';
+        }, 1200);
+    } catch (error) {
+        const message = error?.code?.includes('email-already-in-use')
+            ? 'This email is already registered.'
+            : (error?.message || 'Failed to register library.');
+        showMessage(message, 'error');
     }
-
-    const nameExists = owners.some(o => o.name === name);
-    if (nameExists) {
-        showMessage('Library name already registered', 'error');
-        return;
-    }
-
-    const newOwner = { name, phone, location, password };
-    owners.push(newOwner);
-    
-    safeStorage.set('owners', JSON.stringify(owners));
-
-    showMessage('Library registered successfully! Redirecting to login...', 'success');
-    
-    setTimeout(() => {
-        window.location.href = 'owner-login.html';
-    }, 1500);
 }
 
 function showMessage(message, type) {

@@ -22,25 +22,25 @@
             </div>
 
             <nav class="sa-nav">
-                <a class="sa-nav-link active" href="#">
+                <a id="sa-link-dashboard" class="sa-nav-link active" href="#" data-nav="dashboard" data-target-id="sa-dashboard-section">
                     <span class="material-icons-outlined">dashboard</span>
                     Dashboard
                 </a>
-                <a class="sa-nav-link" href="#">
+                <a id="sa-link-vendors" class="sa-nav-link" href="#" data-nav="vendors" data-target-id="sa-vendors-section">
                     <span class="material-icons-outlined">store</span>
                     Vendors Management
                 </a>
-                <a class="sa-nav-link" href="#">
+                <a id="sa-link-books" class="sa-nav-link" href="#" data-nav="books" data-target-id="sa-books-section">
                     <span class="material-icons-outlined">menu_book</span>
                     Books Moderation
                 </a>
-                <a class="sa-nav-link" href="#">
+                <a id="sa-link-settings" class="sa-nav-link" href="#" data-nav="settings" data-target-id="sa-dashboard-section">
                     <span class="material-icons-outlined">settings</span>
                     Settings
                 </a>
             </nav>
 
-            <a class="sa-nav-link sa-logout" href="#">
+            <a id="sa-sidebar-logout" class="sa-nav-link sa-logout" href="#">
                 <span class="material-icons-outlined">logout</span>
                 Logout
             </a>
@@ -75,7 +75,7 @@
                 </div>
             </header>
 
-            <section class="sa-hero">
+            <section id="sa-dashboard-section" class="sa-hero">
                 <h1>Platform Overview</h1>
                 <p>Manage all vendors, moderate listings, and monitor marketplace performance.</p>
             </section>
@@ -102,31 +102,37 @@
                         <p>Active Users</p>
                         <span class="material-icons-outlined">groups</span>
                     </div>
-                    <h3>12,907</h3>
-                    <small>+5.1% weekly</small>
+                    <h3>--</h3>
+                    <small>Live metric coming soon</small>
                 </article>
                 <article class="sa-card stat">
                     <div class="stat-head">
                         <p>Total Revenue (Platform Cut)</p>
                         <span class="material-icons-outlined">payments</span>
                     </div>
-                    <h3>$482,390</h3>
-                    <small>+11.4% monthly</small>
+                    <h3>--</h3>
+                    <small>Live metric coming soon</small>
                 </article>
             </section>
 
-            <section class="sa-card sa-table-card">
+            <section id="sa-books-section" class="sa-card sa-table-card">
                 <div class="sa-table-head">
                     <div>
                         <h2>Recent Platform Activity</h2>
                         <p>Latest books submitted by vendors</p>
                     </div>
+                    <button id="sa-bulk-delete-btn" class="action-btn remove-btn hidden" type="button" disabled>
+                        Bulk Delete
+                    </button>
                 </div>
 
                 <div class="sa-table-wrap">
                     <table class="sa-table">
                         <thead>
                             <tr>
+                                <th>
+                                    <input id="sa-select-all-books" type="checkbox" aria-label="Select all books">
+                                </th>
                                 <th>Book Image / Title</th>
                                 <th>Vendor Name</th>
                                 <th>Price</th>
@@ -139,23 +145,35 @@
                 </div>
             </section>
 
-            <section class="sa-card sa-table-card">
+            <section id="sa-vendors-section" class="sa-card sa-table-card">
                 <div class="sa-table-head">
                     <div>
                         <h2>Vendors Management</h2>
                         <p>Bulk control vendor visibility across all their books</p>
                     </div>
-                    <select id="sa-vendors-filter" class="sa-select" aria-label="Filter vendors">
-                        <option value="all">All Vendors</option>
-                        <option value="active">Has Active Books</option>
-                        <option value="suspended">Fully Suspended</option>
-                    </select>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <select id="sa-vendors-filter" class="sa-select" aria-label="Filter vendors">
+                            <option value="all">All Vendors</option>
+                            <option value="active">Has Active Books</option>
+                            <option value="suspended">Fully Suspended</option>
+                        </select>
+                        <select id="sa-vendors-bulk-action" class="sa-select hidden" aria-label="Bulk vendor action">
+                            <option value="">Bulk Action</option>
+                            <option value="suspend">Bulk Suspend</option>
+                            <option value="activate">Bulk Activate</option>
+                            <option value="delete">Bulk Delete</option>
+                        </select>
+                        <button id="sa-vendors-bulk-apply" class="action-btn hidden" type="button" disabled>Apply</button>
+                    </div>
                 </div>
 
                 <div class="sa-table-wrap">
                     <table class="sa-table">
                         <thead>
                             <tr>
+                                <th>
+                                    <input id="sa-select-all-vendors" type="checkbox" aria-label="Select all vendors">
+                                </th>
                                 <th>Vendor Phone</th>
                                 <th>Total Books</th>
                                 <th>Active Books</th>

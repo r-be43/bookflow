@@ -11,6 +11,7 @@ import {
 import { db } from './firebase-client.js';
 import { safeStorage } from './storage.js';
 import { createReservation } from '../js/booking.js';
+import { getVendorProfileById } from './vendors-firestore-service.js';
 
 const BOOK_BTN_DEFAULT = 'Book Now';
 const BOOK_BTN_PROCESSING = 'Processing...';
@@ -479,6 +480,7 @@ function mapBookDoc(docSnap) {
         isTrending: Boolean(data.isTrending),
         price: Number(data.price || 0),
         sampleUrl: data.sampleUrl || '',
+        vendorId: data.vendorId || '',
         vendorPhone: data.vendorPhone || data.sellerPhone || '',
     };
 }
@@ -555,8 +557,12 @@ function setupCommerceActions(book) {
     }
 
     if (quickBuyBtn) {
-        quickBuyBtn.onclick = () => {
-            const phoneRaw = String(book.vendorPhone || '').trim();
+        quickBuyBtn.onclick = async () => {
+            let phoneRaw = String(book.vendorPhone || '').trim();
+            if (!phoneRaw && book.vendorId) {
+                const vendor = await getVendorProfileById(book.vendorId);
+                phoneRaw = String(vendor?.phone || '').trim();
+            }
             if (!phoneRaw) {
                 showToast('Seller contact info is missing for this book.', 'error');
                 return;

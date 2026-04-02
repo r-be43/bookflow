@@ -8,6 +8,7 @@ import {
 import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { auth, db } from './firebase-client.js';
 import { safeStorage } from './storage.js';
+import { getVendorProfileById } from './vendors-firestore-service.js';
 
 window.addEventListener('DOMContentLoaded', () => {
     initAuthForms();
@@ -53,11 +54,24 @@ async function handleSignupSubmit(event) {
             await updateProfile(credential.user, { displayName: name });
         }
 
+        await setDoc(
+            doc(db, 'users', credential.user.uid),
+            {
+                uid: credential.user.uid,
+                name: name || credential.user.displayName || 'Reader',
+                email: credential.user.email || email,
+                phone: phone || '',
+                role: 'user',
+            },
+            { merge: true }
+        );
+
         safeStorage.set('user', JSON.stringify({
             uid: credential.user.uid,
             name: name || credential.user.displayName || 'Reader',
             email: credential.user.email || email,
             phone: phone || '',
+            role: 'user',
         }));
 
         showMessage('Account created successfully. Redirecting...', 'success');
@@ -86,16 +100,18 @@ async function handleLoginSubmit(event) {
     setLoadingState(true, 'login-btn', 'Signing in...');
     try {
         const credential = await signInWithEmailAndPassword(auth, email, password);
+        const role = await resolveAuthRole(credential.user.uid);
         safeStorage.set('user', JSON.stringify({
             uid: credential.user.uid,
             name: credential.user.displayName || 'Reader',
             email: credential.user.email || email,
             phone: '',
+            role,
         }));
 
         showMessage('Welcome back! Redirecting...', 'success');
         setTimeout(() => {
-            window.location.href = 'index.html';
+            window.location.href = role === 'vendor' ? 'admin-dashboard.html' : 'index.html';
         }, 700);
     } catch (error) {
         showMessage(readableAuthError(error), 'error');
@@ -125,7 +141,8 @@ export async function logout(redirectTo = 'login.html') {
 
 export function observeAuthState() {
     return onAuthStateChanged(auth, async (user) => {
-        syncStoredUser(user);
+        const role = user ? await resolveAuthRole(user.uid) : null;
+        syncStoredUser(user, role || 'user');
         updateAuthAwareHeader(user);
 
         if (user) {
@@ -136,7 +153,7 @@ export function observeAuthState() {
         if (!body) return;
 
         if (body.dataset.authPage === 'guest-only' && user) {
-            window.location.href = 'index.html';
+            window.location.href = role === 'vendor' ? 'admin-dashboard.html' : 'index.html';
         }
         if (body.dataset.authPage === 'private' && !user) {
             window.location.href = 'login.html';
@@ -193,10 +210,11 @@ function updateAuthAwareHeader(user) {
     });
 }
 
-function syncStoredUser(user) {
+function syncStoredUser(user, role = 'user') {
     if (!user) {
         safeStorage.remove('user');
         safeStorage.remove('currentUser');
+        safeStorage.remove('currentRole');
         return;
     }
 
@@ -205,7 +223,16 @@ function syncStoredUser(user) {
         name: user.displayName || 'Reader',
         email: user.email || '',
         phone: '',
+        role,
     }));
+}
+
+async function resolveAuthRole(uid) {
+    if (!uid) return 'user';
+    const vendor = await getVendorProfileById(uid);
+    const role = vendor ? 'vendor' : 'user';
+    safeStorage.set('currentRole', role);
+    return role;
 }
 
 function setupFavoritesCloudSyncListener() {

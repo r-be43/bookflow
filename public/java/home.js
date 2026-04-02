@@ -419,6 +419,8 @@ async function fetchBooksFromCloud() {
             language: data.language || 'English',
             isTrending: Boolean(data.isTrending),
             isSuspended: data.isSuspended === true,
+            vendorId: data.vendorId || '',
+            vendorPhone: data.vendorPhone || data.sellerPhone || '',
         };
     });
 
