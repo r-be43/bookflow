@@ -4087,60 +4087,141 @@ body.details-page.details-premium {
     }
 }
 /* =========================================
-   📱 MOBILE RESPONSIVE FIXES (Under 768px)
+   Responsive layout fixes
    ========================================= */
-   @media (max-width: 768px) {
-    /* 1. منع البار السفلي من تغطية المحتوى */
-    body {
-        padding-bottom: 90px !important;
+body {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom));
+}
+
+/* Fluid shell for major page containers */
+.home-container,
+.home-container--premium,
+.premium-page-main,
+.favorites-container,
+.profile-container,
+.login-container {
+    width: min(100%, 1200px);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: clamp(12px, 2.5vw, 28px);
+    padding-right: clamp(12px, 2.5vw, 28px);
+}
+
+/* Bottom navigation: responsive from mobile to desktop */
+.bottom-nav,
+.bottom-nav--premium {
+    width: 100%;
+    max-width: min(640px, 100vw);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: clamp(6px, 2vw, 18px);
+    padding-left: clamp(10px, 2vw, 18px);
+    padding-right: clamp(10px, 2vw, 18px);
+}
+
+.nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+}
+
+/* Book cards: reduce excessive vertical stretch */
+.book-card {
+    min-width: clamp(136px, 32vw, 176px);
+    max-width: clamp(136px, 32vw, 176px);
+}
+
+.book-card img {
+    height: clamp(185px, 32vw, 220px);
+    object-fit: cover;
+}
+
+.book-card.book-card--premium {
+    width: clamp(140px, 33vw, 172px) !important;
+    min-width: clamp(140px, 33vw, 172px) !important;
+    max-width: clamp(140px, 33vw, 172px) !important;
+}
+
+.book-card__cover-wrap {
+    aspect-ratio: 2 / 3 !important;
+    max-height: 220px;
+}
+
+/* Grid containers scale by viewport */
+.books-grid,
+.trending-list,
+.books-container,
+.favorites-grid,
+.libraries-grid,
+.related-grid,
+.admin-books-grid,
+.profile-books-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(12px, 2vw, 20px);
+}
+
+@media (max-width: 767px) {
+    .bottom-nav,
+    .bottom-nav--premium {
+        left: 0;
+        transform: none;
+        max-width: 100%;
+        border-radius: 16px 16px 0 0;
+        padding-top: 10px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    }
+}
+
+@media (min-width: 768px) {
+    .book-card.book-card--premium {
+        width: clamp(154px, 23vw, 184px) !important;
+        min-width: clamp(154px, 23vw, 184px) !important;
+        max-width: clamp(154px, 23vw, 184px) !important;
     }
 
-    /* 2. إصلاح البار السفلي (Bottom Navigation) ليصبح بعرض الشاشة */
-    .bottom-nav, 
-    nav[class*="bottom"], 
-    .mobile-nav {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        border-radius: 20px 20px 0 0 !important;
-        display: flex !important;
-        justify-content: space-around !important;
-        align-items: center !important;
-        padding: 15px 0 !important;
-        background: #ffffff !important;
-        box-shadow: 0 -5px 15px rgba(0,0,0,0.08) !important;
-        margin: 0 !important;
-        z-index: 9999 !important;
-    }
-
-    /* 3. إصلاح شبكة الكتب (الصور والمساحات البيضاء) */
-    .books-grid, 
+    .books-grid,
     .trending-list,
-    .books-container {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 15px !important;
-        padding: 0 10px !important;
+    .books-container,
+    .favorites-grid,
+    .libraries-grid,
+    .related-grid,
+    .admin-books-grid,
+    .profile-books-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .bottom-nav,
+    .bottom-nav--premium {
+        max-width: 620px;
     }
 
-    /* 4. تثبيت أبعاد صور الكتب حتى لا تظهر مساحات فارغة */
-    .book-card .image-container, 
-    .book-cover-wrapper,
-    .card-img-top {
-        width: 100% !important;
-        height: 200px !important; /* طول ثابت للصورة */
-        position: relative !important;
-        overflow: hidden !important;
-        background-color: #f8fafc !important; /* لون رصاصي فاتح في حال تأخرت الصورة */
-        border-radius: 12px !important;
+    .books-grid,
+    .trending-list,
+    .books-container,
+    .favorites-grid,
+    .libraries-grid,
+    .related-grid,
+    .admin-books-grid,
+    .profile-books-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+}
 
-    .book-card img,
-    .book-cover-wrapper img {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important; /* يملأ الفراغ بدون تمطيط */
-        object-position: center !important;
+@media (min-width: 1400px) {
+    .books-grid,
+    .trending-list,
+    .books-container,
+    .favorites-grid,
+    .libraries-grid,
+    .related-grid,
+    .admin-books-grid,
+    .profile-books-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 }
