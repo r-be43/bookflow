@@ -49,8 +49,8 @@ async function initDetailsPage() {
     const extended = getBookDetailExtended(book);
     applyReadingDirection(book);
     displayBookDetails(extended);
-    generateFakeLibraries(extended);
-    renderRelatedBooks(extended);
+    await renderVendorLibrary(extended);
+    await renderRelatedBooks(extended);
     setupDetailFavoriteToggle(book);
 }
 
@@ -154,53 +154,107 @@ function renderStars(rating) {
     el.innerHTML = html;
 }
 
-function renderRelatedBooks(current) {
+async function renderRelatedBooks(current) {
     const grid = document.getElementById('related-books-grid');
     if (!grid) return;
 
-    const related = getRelatedBooks(current, allBooks, 4);
+    const related = await fetchRelatedBooksByVendor(current, 8);
     grid.innerHTML = '';
 
-    related.forEach((b) => {
-        const a = document.createElement('a');
-        a.href = `details.html?id=${encodeURIComponent(normalizeBookId(b.id))}`;
-        a.className = 'related-card';
-        a.innerHTML = `
-            <img src="${escapeHtml(b.image)}"
-                 alt="${escapeHtml(b.title)}"
-                 onerror="this.onerror=null;this.src='https://via.placeholder.com/150x210?text=No+Cover'">
-            <div class="related-card-body">
-                <div class="related-card-title">${escapeHtml(b.title)}</div>
-                <div class="related-card-author">${escapeHtml(b.author)}</div>
-            </div>
-        `;
-        grid.appendChild(a);
+    if (!related.length) {
+        grid.innerHTML = '<div class="no-books-found">No related books found for this library.</div>';
+        return;
+    }
+
+    related.forEach((book) => {
+        grid.appendChild(createRelatedBookCard(book));
     });
 }
 
-function generateFakeLibraries(book) {
-    const libraries = [
-        { name: 'Central Public Library', distance: '2.3 km', price: 'Free', available: true },
-        { name: 'University Library', distance: '4.1 km', price: '$5', available: true },
-        { name: 'City Book Center', distance: '5.8 km', price: '$8', available: false },
-        { name: 'Downtown Library', distance: '7.2 km', price: 'Free', available: true },
-    ];
+function createRelatedBookCard(book) {
+    const card = document.createElement('a');
+    card.href = `details.html?id=${encodeURIComponent(normalizeBookId(book.id))}`;
+    card.className = 'book-card book-card--premium related-book-card';
+    card.innerHTML = `
+        <div class="book-card__cover-wrap">
+            <img class="book-card__cover"
+                 src="${escapeHtml(book.image)}"
+                 alt="${escapeHtml(book.title)}"
+                 onerror="this.onerror=null; this.src='https://placehold.co/300x450/eeeeee/999999?text=No+Cover';">
+        </div>
+        <div class="book-card__body">
+            <h3>${escapeHtml(book.title)}</h3>
+            <p class="book-card__author">${escapeHtml(book.author)}</p>
+        </div>
+    `;
+    return card;
+}
 
+async function fetchRelatedBooksByVendor(currentBook, maxItems = 8) {
+    if (!currentBook) return [];
+
+    const currentId = normalizeBookId(currentBook.id);
+    const currentCloudId = normalizeBookId(currentBook.cloudId);
+    const vendorId = String(currentBook.vendorId || '').trim();
+
+    if (!vendorId) {
+        return getRelatedBooks(currentBook, allBooks, maxItems);
+    }
+
+    try {
+        const relatedQuery = query(
+            collection(db, 'books'),
+            where('vendorId', '==', vendorId),
+            limit(maxItems + 1)
+        );
+        const relatedSnap = await getDocs(relatedQuery);
+        const vendorBooks = relatedSnap.docs
+            .map((docSnap) => mapBookDoc(docSnap))
+            .filter((book) => {
+                const bookId = normalizeBookId(book.id);
+                const cloudId = normalizeBookId(book.cloudId);
+                return bookId !== currentId && cloudId !== currentCloudId;
+            })
+            .slice(0, maxItems);
+
+        if (vendorBooks.length) return vendorBooks;
+    } catch (error) {
+        console.error('Failed to fetch related books by vendorId:', error);
+    }
+
+    return getRelatedBooks(currentBook, allBooks, maxItems);
+}
+
+async function renderVendorLibrary(book) {
     const container = document.getElementById('libraries-list');
     const countElement = document.getElementById('library-count');
-
     if (!container) return;
-
-    const availableCount = libraries.filter((lib) => lib.available).length;
-    if (countElement) {
-        countElement.textContent = `${availableCount} ${availableCount === 1 ? 'branch' : 'branches'}`;
-    }
 
     container.innerHTML = '';
 
-    libraries.forEach((lib) => {
-        container.appendChild(createLibraryItem(lib));
-    });
+    const vendorId = String(book?.vendorId || '').trim();
+    if (!vendorId) {
+        if (countElement) countElement.textContent = '0 branches';
+        container.innerHTML = '<div class="no-books-found">Vendor information is unavailable.</div>';
+        return;
+    }
+
+    const vendorInfo = await fetchVendorInfo(vendorId);
+    const libraryName = String(
+        vendorInfo?.storeName || vendorInfo?.name || vendorInfo?.displayName || 'Library Branch'
+    ).trim();
+    const subtitle = String(vendorInfo?.phone || vendorInfo?.email || '').trim();
+    const hasPrice = Number.isFinite(book?.price) && Number(book.price) > 0;
+    const priceText = hasPrice ? formatIqdPrice(Number(book.price)) : 'N/A';
+    const library = {
+        name: libraryName,
+        subtitle: subtitle || `Vendor ID: ${vendorId}`,
+        price: priceText,
+        available: true,
+    };
+
+    if (countElement) countElement.textContent = '1 branch';
+    container.appendChild(createLibraryItem(library));
 }
 
 function createLibraryItem(library) {
@@ -218,8 +272,8 @@ function createLibraryItem(library) {
             <div class="lib-meta">
                 <h4>${library.name}</h4>
                 <span class="lib-distance">
-                    <span class="material-icons-outlined" style="font-size: 14px;">location_on</span>
-                    ${library.distance}
+                    <span class="material-icons-outlined" style="font-size: 14px;">storefront</span>
+                    ${library.subtitle}
                 </span>
             </div>
         </div>
@@ -230,6 +284,46 @@ function createLibraryItem(library) {
     `;
 
     return item;
+}
+
+async function fetchVendorInfo(vendorId) {
+    const id = String(vendorId || '').trim();
+    if (!id) return null;
+
+    try {
+        const vendor = await getVendorProfileById(id);
+        if (vendor) {
+            return {
+                storeName: String(vendor.storeName || '').trim(),
+                name: String(vendor.name || '').trim(),
+                displayName: String(vendor.displayName || '').trim(),
+                phone: String(vendor.phone || vendor.vendorPhone || '').trim(),
+                email: String(vendor.email || '').trim(),
+            };
+        }
+    } catch (error) {
+        console.warn('Failed to fetch vendor profile from vendors collection:', error);
+    }
+
+    try {
+        const userSnap = await getDoc(doc(db, 'users', id));
+        if (!userSnap.exists()) return null;
+        const data = userSnap.data() || {};
+        return {
+            storeName: String(data.storeName || '').trim(),
+            name: String(data.name || '').trim(),
+            displayName: String(data.displayName || '').trim(),
+            phone: String(data.phone || data.vendorPhone || '').trim(),
+            email: String(data.email || '').trim(),
+        };
+    } catch (error) {
+        console.warn('Failed to fetch vendor profile from users collection:', error);
+        return null;
+    }
+}
+
+function formatIqdPrice(value) {
+    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)} IQD`;
 }
 
 function showError(message) {

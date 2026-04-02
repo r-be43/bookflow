@@ -88,11 +88,11 @@
                         <span id="detail-stock-label">—</span>
                     </div>
 
-                    <div class="details-action-buttons" style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <button type="button" class="btn-primary btn-primary--premium" id="buy-btn">
+                    <div class="details-action-buttons">
+                        <button type="button" class="btn-primary btn-primary--premium details-action-btn" id="buy-btn">
                             Buy Now - <span id="book-price">N/A</span>
                         </button>
-                        <button type="button" class="btn-secondary btn-secondary--premium" id="sample-btn">
+                        <button type="button" class="btn-secondary btn-secondary--premium details-action-btn" id="sample-btn">
                             Read Sample
                         </button>
                     </div>
@@ -128,7 +128,7 @@
                     <h2 class="section-heading">Customers also borrowed</h2>
                     <a href="index.html" class="related-see-all">Browse all</a>
                 </div>
-                <div class="related-grid" id="related-books-grid"></div>
+                <div class="related-grid books-scroll-view books-scroll-view--premium" id="related-books-grid"></div>
             </section>
         </article>
     </main>
@@ -144,7 +144,7 @@
                 <span class="material-icons-outlined modal-close" id="modal-close" role="button" tabindex="0">close</span>
             </div>
 
-            <div class="modal-body">
+            <div class="modal-body modal-body--premium">
                 <div class="book-preview book-preview--premium">
                     <img src="" alt="" id="modal-book-cover">
                     <div>
@@ -153,29 +153,31 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="library-select">Select library</label>
-                    <select id="library-select" class="form-select">
-                        <option value="">Choose a library…</option>
-                        <option value="Central Library">Central Library</option>
-                        <option value="City Library">City Library</option>
-                        <option value="University Library">University Library</option>
-                    </select>
-                </div>
+                <div class="modal-form-fields">
+                    <div class="form-group">
+                        <label for="library-select">Select library</label>
+                        <select id="library-select" class="form-select">
+                            <option value="">Choose a library…</option>
+                            <option value="Central Library">Central Library</option>
+                            <option value="City Library">City Library</option>
+                            <option value="University Library">University Library</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label for="pickup-date">Pickup date</label>
-                    <input type="date" id="pickup-date" class="form-input">
-                </div>
+                    <div class="form-group">
+                        <label for="pickup-date">Pickup date</label>
+                        <input type="date" id="pickup-date" class="form-input">
+                    </div>
 
-                <div class="form-group">
-                    <label for="userName">Your name</label>
-                    <input type="text" id="userName" class="form-input" placeholder="Enter your name" autocomplete="name">
-                </div>
+                    <div class="form-group">
+                        <label for="userName">Your name</label>
+                        <input type="text" id="userName" class="form-input" placeholder="Enter your name" autocomplete="name">
+                    </div>
 
-                <div class="form-group">
-                    <label for="user-phone">Phone number</label>
-                    <input type="tel" id="user-phone" class="form-input" placeholder="Enter your phone">
+                    <div class="form-group">
+                        <label for="user-phone">Phone number</label>
+                        <input type="tel" id="user-phone" class="form-input" placeholder="Enter your phone">
+                    </div>
                 </div>
             </div>
 
