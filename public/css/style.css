@@ -2260,9 +2260,10 @@ body.details-page.details-premium {
     flex-direction: row;
     background: rgba(255, 255, 255, 0.28);
     border-bottom: 1px solid rgba(30, 58, 95, 0.12);
-    position: sticky;
-    top: 60px;
-    z-index: 100;
+    position: relative;
+    top: auto;
+    z-index: 1;
+    margin-bottom: 8px;
 }
 
 .tab-btn {
@@ -2293,7 +2294,7 @@ body.details-page.details-premium {
 
 .tab-content {
     display: none;
-    padding: calc(var(--space-md) + 2px);
+    padding: calc(var(--space-md) + 4px) calc(var(--space-md) + 2px) calc(var(--space-md) + 2px);
     background: transparent;
 }
 
@@ -4111,19 +4112,21 @@ body {
 .bottom-nav,
 .bottom-nav--premium {
     width: 100%;
-    max-width: min(640px, 100vw);
-    left: 50%;
-    transform: translateX(-50%);
+    max-width: 100%;
+    left: 0;
+    right: 0;
+    transform: none;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     gap: clamp(6px, 2vw, 18px);
-    padding-left: clamp(10px, 2vw, 18px);
-    padding-right: clamp(10px, 2vw, 18px);
+    padding-left: max(clamp(10px, 2vw, 18px), env(safe-area-inset-left));
+    padding-right: max(clamp(10px, 2vw, 18px), env(safe-area-inset-right));
 }
 
 .nav-item {
     flex: 1 1 0;
+    max-width: 180px;
     min-width: 0;
     justify-content: center;
 }
@@ -4167,8 +4170,6 @@ body {
 @media (max-width: 767px) {
     .bottom-nav,
     .bottom-nav--premium {
-        left: 0;
-        transform: none;
         max-width: 100%;
         border-radius: 16px 16px 0 0;
         padding-top: 10px;
@@ -4196,11 +4197,6 @@ body {
 }
 
 @media (min-width: 1024px) {
-    .bottom-nav,
-    .bottom-nav--premium {
-        max-width: 620px;
-    }
-
     .books-grid,
     .trending-list,
     .books-container,
