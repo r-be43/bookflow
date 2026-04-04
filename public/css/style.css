@@ -606,6 +606,8 @@ body.mobile-premium-page .premium-page-main {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .nav-brand-text {
@@ -613,10 +615,29 @@ body.mobile-premium-page .premium-page-main {
     font-size: 1.25rem;
     letter-spacing: -0.02em;
     color: #1e3a5f;
+    white-space: nowrap;
 }
 
 .nav-brand-icon {
     font-size: 1.35rem;
+}
+
+.top-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+}
+
+.top-nav-actions [data-auth-username] {
+    display: inline-block;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
 }
 
 .icon-btn--premium:hover {
@@ -2603,6 +2624,46 @@ body[dir="rtl"] .lib-status {
         max-width: 350px;
         max-height: 60vh;
         z-index: 10000;
+    }
+}
+
+@media (max-width: 520px) {
+    .top-nav {
+        padding: 10px 10px;
+        gap: 8px;
+    }
+
+    .nav-brand-premium {
+        gap: 6px;
+    }
+
+    .nav-brand-icon {
+        font-size: 1.15rem;
+    }
+
+    .nav-brand-text {
+        font-size: 1.05rem;
+    }
+
+    .top-nav-actions {
+        gap: 6px;
+        flex: 1;
+        justify-content: flex-end;
+        overflow: hidden;
+    }
+
+    .top-nav-actions .category-chip {
+        padding: 6px 10px !important;
+        font-size: 0.68rem !important;
+    }
+
+    .top-nav-actions [data-auth-username] {
+        max-width: 88px;
+    }
+
+    .top-nav-actions .icon-btn {
+        padding: 4px;
+        font-size: 1.45rem;
     }
 }
 
