@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="Review your selected books and confirm reservations.">
+    <title>Cart — LibraShelf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head>
+<body class="home-page home-page--premium mobile-premium-page">
+    <div class="premium-bg-mesh home-bg-mesh" aria-hidden="true"></div>
+
+    <nav class="top-nav top-nav--premium">
+        <div class="nav-brand-premium">
+            <span class="nav-brand-icon" aria-hidden="true">📚</span>
+            <span class="nav-brand-text">LibraShelf</span>
+        </div>
+        <div class="top-nav-actions" style="display:flex; align-items:center; gap:10px;">
+            <a href="cart.html" id="cart-link" class="cart-link icon-btn icon-btn--premium" aria-label="Open cart">
+                <span class="material-icons-outlined">shopping_cart</span>
+                <span class="cart-badge" id="cart-count-badge">0</span>
+            </a>
+            <a href="profile.html" class="category-chip active" style="padding:8px 14px; font-size:0.78rem;">Profile</a>
+        </div>
+    </nav>
+
+    <main class="home-container home-container--premium cart-page-main">
+        <section class="cart-page-shell">
+            <div class="section-header section-header--premium">
+                <h2>Shopping Cart</h2>
+                <span class="section-tag section-tag--teal" id="cart-items-pill">0 Items</span>
+            </div>
+
+            <div class="cart-layout">
+                <section class="cart-items-panel">
+                    <div id="cart-items-list" class="cart-items-list"></div>
+                    <div id="cart-empty-state" class="cart-empty-state hidden">
+                        <span class="material-icons-outlined">shopping_cart</span>
+                        <h3>Your cart is empty</h3>
+                        <p>Add books from the details page to reserve them later.</p>
+                        <a href="index.html" class="btn-primary btn-primary--premium">Browse Books</a>
+                    </div>
+                </section>
+
+                <aside class="cart-summary-panel">
+                    <h3>Checkout Summary</h3>
+                    <div class="cart-summary-row">
+                        <span>Total items</span>
+                        <strong id="summary-total-items">0</strong>
+                    </div>
+                    <div class="cart-summary-row">
+                        <span>Total price</span>
+                        <strong id="summary-total-price">0 IQD</strong>
+                    </div>
+                    <button type="button" class="btn-primary btn-primary--premium" id="confirm-all-btn">
+                        Confirm All Reservations
+                    </button>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="site-footer__grid">
+            <div class="site-footer__col">
+                <h3>LibraShelf</h3>
+                <p>Your gateway to endless stories.</p>
+            </div>
+            <div class="site-footer__col">
+                <h4>Quick Links</h4>
+                <a href="index.html">Home</a>
+                <a href="index.html#browse-categories-heading">Categories</a>
+                <a href="cart.html">Cart</a>
+                <a href="profile.html">About</a>
+            </div>
+            <div class="site-footer__col">
+                <h4>Connect</h4>
+                <a href="#" aria-label="Facebook">Facebook</a>
+                <a href="#" aria-label="Instagram">Instagram</a>
+                <a href="#" aria-label="Twitter">Twitter</a>
+                <p class="site-footer__contact">Contact: support@librashelf.com</p>
+            </div>
+        </div>
+        <div class="site-footer__bottom">
+            <span>&copy; 2026 LibraShelf. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <nav class="bottom-nav bottom-nav--premium">
+        <a href="index.html" class="nav-item">
+            <span class="material-icons-outlined">home</span>
+            <span>Home</span>
+        </a>
+        <a href="favorites.html" class="nav-item">
+            <span class="material-icons-outlined">favorite_border</span>
+            <span>Favorites</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <span class="material-icons-outlined">person_outline</span>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <div class="modal-overlay modal-overlay--premium" id="checkout-modal">
+        <div class="modal-content modal-content--premium">
+            <div class="modal-header modal-header--premium">
+                <div>
+                    <p class="modal-kicker">Complete your checkout</p>
+                    <h3>Confirm Reservations</h3>
+                </div>
+                <span class="material-icons-outlined modal-close" id="checkout-modal-close" role="button" tabindex="0">close</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="checkout-name">Your name</label>
+                    <input type="text" id="checkout-name" class="form-input" placeholder="Enter your name" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label for="checkout-phone">Phone number</label>
+                    <input type="tel" id="checkout-phone" class="form-input" placeholder="Enter your phone number">
+                </div>
+            </div>
+            <div class="modal-footer modal-footer--premium">
+                <button type="button" class="btn-secondary btn-secondary--premium" id="checkout-cancel-btn">Cancel</button>
+                <button type="button" class="btn-primary btn-primary--premium" id="checkout-submit-btn">Submit Reservations</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="java/cart.js"></script>
+    <script type="module" src="java/auth.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 // home.js
-import { collection, doc, getDocs, setDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { collection, doc, getDoc, getDocs, onSnapshot, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { auth, db } from './firebase-client.js';
 import { safeStorage } from './storage.js';
 
@@ -25,6 +26,12 @@ const CATEGORIES = [
 
 let selectedCategory = 'All';
 let currentSearchTerm = '';
+let searchDebounce = null;
+const ROW_IDS = ['row-popular', 'row-world', 'row-new', 'row-history'];
+const notificationState = {
+    itemsById: new Map(),
+    unsubscribers: [],
+};
 
 // ========================================
 // التهيئة عند تحميل الصفحة
@@ -32,7 +39,14 @@ let currentSearchTerm = '';
 window.addEventListener('DOMContentLoaded', () => {
     initHomePage();
     window.addEventListener('favorites:updated', () => {
-        renderAllSections();
+        if (isBrowsingRowsMode()) {
+            renderHomeRows();
+        } else {
+            runSearchAndFilter();
+        }
+    });
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'cartItems') updateCartBadge();
     });
 });
 
@@ -40,13 +54,14 @@ async function initHomePage() {
     showHomeLoading(true);
     setupBottomNav();
     setupNotifications();
+    setupCartBadge();
 
     try {
         booksList = await fetchBooksFromCloud();
         renderCategoryChips();
-        renderAllSections();
         setupSearch();
         setupCategories();
+        renderHomeRows();
     } catch (error) {
         console.error('Failed to fetch books from Firestore:', error);
         showToast('Could not load catalog. Please refresh.', 'error');
@@ -55,18 +70,21 @@ async function initHomePage() {
     }
 }
 
-// ========================================
-// عرض كل الأقسام
-// ========================================
-function renderAllSections() {
-    const rows = [
-        ['trending-container', getTrendingBooks(booksList)],
-        ['new-container', getNewReleases(booksList)],
-        ['popular-container', getMostPopular(booksList)],
-        ['arabic-container', getArabicBooks(booksList)],
-        ['foreign-container', getForeignBooks(booksList)],
-    ];
-    rows.forEach(([id, books]) => renderSection(id, books));
+function isBrowsingRowsMode() {
+    return !currentSearchTerm && selectedCategory === 'All';
+}
+
+function renderHomeRows() {
+    const rowData = {
+        'row-popular': getMostPopular(booksList, 18),
+        'row-world': getWorldLiteratureBooks(booksList, 18),
+        'row-new': getNewReleases(booksList, 18),
+        'row-history': getHistoryAndThoughtBooks(booksList, 18),
+    };
+    ROW_IDS.forEach((rowId) => {
+        renderHorizontalRow(rowId, rowData[rowId] || []);
+    });
+    toggleHomeMode(true);
 }
 
 // ========================================
@@ -102,6 +120,19 @@ function renderSection(containerId, books) {
 
     setBookSectionVisibility(containerId, true);
     renderBookGrid(books, containerId);
+}
+
+function renderHorizontalRow(containerId, books) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    if (!books.length) {
+        container.innerHTML = '<div class="no-books-found">No books found</div>';
+        return;
+    }
+    books.forEach((book) => {
+        container.appendChild(createBookCard(book));
+    });
 }
 
 // ========================================
@@ -236,7 +267,17 @@ function setupSearch() {
 
     searchInput.addEventListener('input', (e) => {
         currentSearchTerm = String(e.target.value || '').trim();
-        applyActiveFilters();
+        if (searchDebounce) clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            runSearchAndFilter();
+        }, 300);
+    });
+
+    searchInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        if (searchDebounce) clearTimeout(searchDebounce);
+        runSearchAndFilter();
     });
 }
 
@@ -269,35 +310,24 @@ function setupCategories() {
             btn.classList.add('active');
 
             selectedCategory = btn.getAttribute('data-category') || btn.innerText || 'All';
-            applyActiveFilters();
+            runSearchAndFilter();
         });
     });
 }
 
-function applyActiveFilters() {
+async function runSearchAndFilter() {
+    showHomeLoading(true);
+    if (isBrowsingRowsMode()) {
+        renderHomeRows();
+        showHomeLoading(false);
+        return;
+    }
+
     const byCategory = filterByCategoryList(booksList, selectedCategory);
     const filtered = currentSearchTerm ? searchInBooks(byCategory, currentSearchTerm) : byCategory;
-
-    if (!currentSearchTerm && selectedCategory === 'All') {
-        renderAllSections();
-        return;
-    }
-
-    const mainContainerId = 'trending-container';
-    const mainContainer = document.getElementById(mainContainerId);
-    if (!mainContainer) return;
-
-    ['new-container', 'popular-container', 'arabic-container', 'foreign-container'].forEach((id) => {
-        setBookSectionVisibility(id, false);
-    });
-    setBookSectionVisibility(mainContainerId, true);
-
-    if (!filtered.length) {
-        mainContainer.innerHTML = '<div class="no-books-found">No books found</div>';
-        return;
-    }
-
-    renderBookGrid(filtered, mainContainerId);
+    toggleHomeMode(false);
+    renderBookGridByElement(filtered, document.getElementById('search-results-grid'));
+    showHomeLoading(false);
 }
 
 // ========================================
@@ -317,49 +347,121 @@ function setupBottomNav() {
     });
 }
 
+function setupCartBadge() {
+    updateCartBadge();
+}
+
+function updateCartBadge() {
+    const badge = document.getElementById('cart-count-badge');
+    if (!badge) return;
+    const items = getCartItems();
+    badge.textContent = String(items.length);
+    badge.classList.toggle('hidden', items.length === 0);
+}
+
 // ========================================
 // إعداد الإشعارات
 // ========================================
 function setupNotifications() {
     const notifBtn = document.getElementById('notif-btn');
-    const dropdown = document.getElementById('notif-dropdown');
+    const dropdown = document.getElementById('notification-dropdown') || document.getElementById('notif-dropdown');
     const markAllRead = document.getElementById('mark-all-read');
-    const badge = document.getElementById('notif-badge');
+    const notifList = document.getElementById('notification-list') || document.getElementById('notif-list');
 
     if (!notifBtn || !dropdown) return;
+    closeNotificationDropdown(dropdown, notifBtn);
 
-    notifBtn.addEventListener('click', (e) => {
+    notifBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        dropdown.classList.toggle('active');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target) && e.target !== notifBtn) {
-            dropdown.classList.remove('active');
+        const willOpen = !isNotificationDropdownOpen(dropdown);
+        if (willOpen) {
+            openNotificationDropdown(dropdown, notifBtn);
+        } else {
+            closeNotificationDropdown(dropdown, notifBtn);
+        }
+        if (willOpen) {
+            await markAllNotificationsRead();
         }
     });
 
-    markAllRead?.addEventListener('click', () => {
-        document.querySelectorAll('.notif-item.unread').forEach(item => {
-            item.classList.remove('unread');
-        });
-        badge.classList.add('hidden');
+    document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target) && !notifBtn.contains(e.target)) {
+            closeNotificationDropdown(dropdown, notifBtn);
+        }
+    });
+
+    markAllRead?.addEventListener('click', async () => {
+        await markAllNotificationsRead();
         showToast('All notifications marked as read', 'success');
     });
 
-    document.querySelectorAll('.notif-item').forEach(item => {
-        item.addEventListener('click', () => {
-            item.classList.remove('unread');
-            updateBadgeCount();
+    notifList?.addEventListener('click', async (event) => {
+        const item = event.target.closest('.notif-item[data-id]');
+        if (!item) return;
+        const id = String(item.getAttribute('data-id') || '').trim();
+        if (!id) return;
+
+        await markSingleNotificationRead(id);
+        const targetUrl = String(item.getAttribute('data-target-url') || '').trim();
+        if (targetUrl) {
+            window.location.href = targetUrl;
+        }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+        cleanupNotificationSubscriptions();
+        notificationState.itemsById.clear();
+        renderNotifications([]);
+        if (!user) return;
+
+        const phone = await resolveUserPhone(user.uid);
+        const sources = [query(collection(db, 'notifications'), where('userId', '==', user.uid))];
+        if (phone) {
+            sources.push(query(collection(db, 'notifications'), where('userPhone', '==', phone)));
+        }
+
+        sources.forEach((sourceQuery) => {
+            const unsubscribe = onSnapshot(sourceQuery, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const docSnap = change.doc;
+                    if (change.type === 'removed') {
+                        notificationState.itemsById.delete(docSnap.id);
+                        return;
+                    }
+                    notificationState.itemsById.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+                });
+                renderNotifications(Array.from(notificationState.itemsById.values()));
+            }, (error) => {
+                console.error('Notification listener failed:', error);
+            });
+            notificationState.unsubscribers.push(unsubscribe);
         });
     });
+}
+
+function isNotificationDropdownOpen(dropdown) {
+    if (!dropdown) return false;
+    return dropdown.classList.contains('active') || dropdown.style.display === 'block';
+}
+
+function openNotificationDropdown(dropdown, trigger) {
+    dropdown.classList.remove('hidden');
+    dropdown.classList.add('active');
+    dropdown.style.display = 'block';
+    if (trigger) trigger.setAttribute('aria-expanded', 'true');
+}
+
+function closeNotificationDropdown(dropdown, trigger) {
+    dropdown.classList.remove('active');
+    dropdown.classList.add('hidden');
+    dropdown.style.display = 'none';
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
 }
 
 // ========================================
 // تحديث عدد الإشعارات
 // ========================================
-function updateBadgeCount() {
-    const unreadCount = document.querySelectorAll('.notif-item.unread').length;
+function updateBadgeCount(unreadCount) {
     const badge = document.getElementById('notif-badge');
     if (!badge) return;
 
@@ -369,6 +471,120 @@ function updateBadgeCount() {
         badge.classList.remove('hidden');
         badge.textContent = unreadCount;
     }
+}
+
+function renderNotifications(items) {
+    const list = document.getElementById('notification-list') || document.getElementById('notif-list');
+    if (!list) return;
+    const sorted = [...items].sort((a, b) => getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt));
+    list.innerHTML = '';
+
+    if (!sorted.length) {
+        list.innerHTML = `
+            <div class="notif-empty-state" role="status" aria-live="polite">
+                <span class="material-icons-outlined notif-empty-state__icon" aria-hidden="true">notifications_none</span>
+                <p class="notif-empty-state__title">No new notifications</p>
+                <p class="notif-empty-state__hint">We will notify you when your reservation status changes.</p>
+            </div>
+        `;
+        updateBadgeCount(0);
+        return;
+    }
+
+    let unreadCount = 0;
+    sorted.forEach((item) => {
+        const unread = item.read !== true;
+        const status = String(item.status || '').trim().toLowerCase();
+        const statusClass = status === 'approved' ? ' notif-approved' : status === 'rejected' ? ' notif-rejected' : '';
+        if (unread) unreadCount += 1;
+        const node = document.createElement('div');
+        node.className = `notif-item${unread ? ' unread' : ''}${statusClass}`;
+        node.setAttribute('data-id', String(item.id || ''));
+        if (item.targetUrl) node.setAttribute('data-target-url', String(item.targetUrl));
+        node.innerHTML = `
+            <div class="notif-item__title">${escapeHtml(String(item.title || getNotificationFallbackTitle(status)))}</div>
+            <div class="notif-item__body">${escapeHtml(String(item.body || getNotificationFallbackBody(status)))}</div>
+            <div class="notif-item__time">${formatNotifTime(item.createdAt)}</div>
+        `;
+        list.appendChild(node);
+    });
+    updateBadgeCount(unreadCount);
+}
+
+function getNotificationFallbackTitle(status) {
+    if (status === 'approved') return 'Reservation Approved';
+    if (status === 'rejected') return 'Reservation Rejected';
+    return 'Reservation Update';
+}
+
+function getNotificationFallbackBody(status) {
+    if (status === 'approved') return 'The library owner approved your request.';
+    if (status === 'rejected') return 'The library owner rejected your request.';
+    return 'Your reservation status was updated.';
+}
+
+async function markAllNotificationsRead() {
+    const unread = Array.from(notificationState.itemsById.values()).filter((item) => item.read !== true);
+    await Promise.all(unread.map((item) => markSingleNotificationRead(item.id)));
+}
+
+async function markSingleNotificationRead(notificationId) {
+    if (!notificationId) return;
+    try {
+        await setDoc(
+            doc(db, 'notifications', String(notificationId)),
+            { read: true, readAt: new Date().toISOString() },
+            { merge: true }
+        );
+        const existing = notificationState.itemsById.get(notificationId);
+        if (existing) {
+            notificationState.itemsById.set(notificationId, { ...existing, read: true });
+            renderNotifications(Array.from(notificationState.itemsById.values()));
+        }
+    } catch (error) {
+        console.error('Failed to mark notification read:', error);
+    }
+}
+
+function cleanupNotificationSubscriptions() {
+    notificationState.unsubscribers.forEach((unsubscribe) => {
+        try { unsubscribe(); } catch {}
+    });
+    notificationState.unsubscribers = [];
+}
+
+async function resolveUserPhone(uid) {
+    const cached = safeStorage.get('user');
+    if (cached) {
+        try {
+            const parsed = JSON.parse(cached) || {};
+            const phone = String(parsed.phone || '').trim();
+            if (phone) return phone;
+        } catch {}
+    }
+    if (!uid) return '';
+    try {
+        const userSnap = await getDoc(doc(db, 'users', uid));
+        const data = userSnap.exists() ? userSnap.data() || {} : {};
+        const phone = String(data.phone || '').trim();
+        return phone;
+    } catch {
+        return '';
+    }
+}
+
+function getTimestampMs(value) {
+    if (!value) return 0;
+    if (typeof value.toMillis === 'function') return value.toMillis();
+    if (typeof value.seconds === 'number') return value.seconds * 1000;
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatNotifTime(value) {
+    const ms = getTimestampMs(value);
+    if (!ms) return '';
+    return new Date(ms).toLocaleString();
 }
 
 // ========================================
@@ -432,7 +648,16 @@ async function fetchBooksFromCloud() {
 function renderBookGrid(books, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
+    renderBookGridByElement(books, container);
+}
+
+function renderBookGridByElement(books, container) {
+    if (!container) return;
     container.innerHTML = '';
+    if (!books.length) {
+        container.innerHTML = '<div class="no-books-found">No books found</div>';
+        return;
+    }
     books.forEach((book) => {
         container.appendChild(createBookCard(book));
     });
@@ -499,17 +724,17 @@ function getTrendingBooks(books) {
     return books.filter((book) => book.isTrending === true);
 }
 
-function getNewReleases(books) {
+function getNewReleases(books, maxItems = 10) {
     return [...books]
         .filter((book) => book.year >= 2015)
         .sort((a, b) => b.year - a.year)
-        .slice(0, 10);
+        .slice(0, maxItems);
 }
 
-function getMostPopular(books) {
+function getMostPopular(books, maxItems = 10) {
     return [...books]
         .sort((a, b) => b.rating - a.rating)
-        .slice(0, 10);
+        .slice(0, maxItems);
 }
 
 function getArabicBooks(books) {
@@ -518,6 +743,28 @@ function getArabicBooks(books) {
 
 function getForeignBooks(books) {
     return books.filter((book) => book.language === 'English');
+}
+
+function getWorldLiteratureBooks(books, maxItems = 18) {
+    return books
+        .filter((book) => String(book.language || '').toLowerCase() === 'english')
+        .slice(0, maxItems);
+}
+
+function getHistoryAndThoughtBooks(books, maxItems = 18) {
+    return books
+        .filter((book) => {
+            const category = String(book.category || '').toLowerCase();
+            return category.includes('history') || category.includes('thought') || category.includes('philosophy');
+        })
+        .slice(0, maxItems);
+}
+
+function toggleHomeMode(showRows) {
+    const rowsWrapper = document.getElementById('home-rows-wrapper');
+    const searchSection = document.getElementById('search-results-section');
+    if (rowsWrapper) rowsWrapper.hidden = !showRows;
+    if (searchSection) searchSection.hidden = showRows;
 }
 
 function showHomeLoading(isLoading) {
@@ -533,6 +780,17 @@ function normalizeBookId(id) {
 function normalizeFavoriteIds(ids) {
     const source = Array.isArray(ids) ? ids : [];
     return Array.from(new Set(source.map((id) => normalizeBookId(id)).filter(Boolean)));
+}
+
+function getCartItems() {
+    const raw = safeStorage.get('cartItems');
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
 }
 
 // ========================================

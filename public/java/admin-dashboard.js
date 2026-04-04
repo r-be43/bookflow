@@ -24,6 +24,7 @@ const state = {
     unsubscribes: [],
     pendingConfirmAction: null,
     quickEditBookId: '',
+    supportTickets: [],
 };
 
 const el = {
@@ -39,6 +40,7 @@ const el = {
     reservationsSection: document.getElementById('ad-section-reservations'),
     inventorySection: document.getElementById('ad-section-inventory'),
     dashboardSection: document.getElementById('ad-section-dashboard'),
+    supportSection: document.getElementById('ad-section-support'),
     inventoryPageInfo: document.getElementById('ad-inventory-page-info'),
     inventoryPrev: document.getElementById('ad-inventory-prev'),
     inventoryNext: document.getElementById('ad-inventory-next'),
@@ -62,6 +64,8 @@ const el = {
     logoutBtn: document.getElementById('ad-logout-btn'),
     reservationFilters: Array.from(document.querySelectorAll('[data-res-filter]')),
     navLinks: Array.from(document.querySelectorAll('[data-ad-nav]')),
+    supportBody: document.getElementById('ad-support-body'),
+    supportEmpty: document.getElementById('ad-support-empty'),
 };
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -166,25 +170,49 @@ function bindUiEvents() {
     });
 
     el.reservationBody?.addEventListener('click', async (event) => {
-        const completeBtn = event.target.closest('[data-action="mark-completed"]');
-        if (completeBtn) {
-            const reservationId = String(completeBtn.getAttribute('data-reservation-id') || '').trim();
+        const approveBtn = event.target.closest('[data-action="approve-reservation"]');
+        if (approveBtn) {
+            const reservationId = String(approveBtn.getAttribute('data-reservation-id') || '').trim();
             if (reservationId) {
-                showConfirmModal('Are you sure you want to mark this reservation as completed?', async () => {
-                    await updateReservationStatus(reservationId, 'completed');
-                    showToast('Reservation marked as completed', 'success');
+                showConfirmModal('Approve this reservation?', async () => {
+                    await updateReservationStatus(reservationId, 'approved');
+                    showToast('Reservation approved', 'success');
                 });
             }
             return;
         }
 
-        const cancelBtn = event.target.closest('[data-action="cancel-reservation"]');
-        if (!cancelBtn) return;
-        const reservationId = String(cancelBtn.getAttribute('data-reservation-id') || '').trim();
+        const undoBtn = event.target.closest('[data-action="undo-reservation"]');
+        if (undoBtn) {
+            const reservationId = String(undoBtn.getAttribute('data-reservation-id') || '').trim();
+            if (reservationId) {
+                showConfirmModal('Are you sure you want to revert this reservation to pending?', async () => {
+                    await updateReservationStatus(reservationId, 'pending');
+                    activateReservationFilter('active');
+                    showToast('Reservation reverted to pending', 'success');
+                });
+            }
+            return;
+        }
+
+        const rejectBtn = event.target.closest('[data-action="reject-reservation"]');
+        if (!rejectBtn) return;
+        const reservationId = String(rejectBtn.getAttribute('data-reservation-id') || '').trim();
         if (!reservationId) return;
-        showConfirmModal('Are you sure you want to cancel this reservation?', async () => {
-            await updateReservationStatus(reservationId, 'cancelled', { makeBookAvailable: true });
-            showToast('Reservation cancelled and book marked available', 'success');
+        showConfirmModal('Reject this reservation?', async () => {
+            await updateReservationStatus(reservationId, 'rejected', { makeBookAvailable: true });
+            showToast('Reservation rejected and book marked available', 'success');
+        });
+    });
+
+    el.supportBody?.addEventListener('click', async (event) => {
+        const resolveBtn = event.target.closest('[data-action="resolve-support"]');
+        if (!resolveBtn) return;
+        const ticketId = String(resolveBtn.getAttribute('data-ticket-id') || '').trim();
+        if (!ticketId) return;
+        showConfirmModal('Mark this support message as resolved and remove it?', async () => {
+            await deleteDoc(doc(db, 'support_tickets', ticketId));
+            showToast('Support message resolved', 'success');
         });
     });
 
@@ -209,7 +237,12 @@ function startRealtimeSubscriptions() {
         renderAll();
     });
 
-    state.unsubscribes = [unsubscribeBooks, unsubscribeReservations];
+    const unsubscribeSupport = onSnapshot(collection(db, 'support_tickets'), (snapshot) => {
+        state.supportTickets = snapshot.docs.map((docSnap) => ({ docId: docSnap.id, ...docSnap.data() }));
+        renderSupportTickets();
+    });
+
+    state.unsubscribes = [unsubscribeBooks, unsubscribeReservations, unsubscribeSupport];
 }
 
 function renderAll() {
@@ -217,6 +250,7 @@ function renderAll() {
     renderKpis();
     renderReservations();
     renderInventory();
+    renderSupportTickets();
 }
 
 function hydrateVendorReservations() {
@@ -261,7 +295,9 @@ function renderReservations() {
             const statusClass = getReservationClass(reservation.status);
             const statusLabel = getReservationLabel(reservation.status);
             const statusKey = String(reservation.status || '').toLowerCase();
-            const canChange = !new Set(['completed', 'cancelled', 'picked up', 'picked_up']).has(statusKey);
+            const completedLikeStatuses = new Set(['approved', 'rejected', 'completed', 'cancelled', 'picked up', 'picked_up']);
+            const canChange = !completedLikeStatuses.has(statusKey);
+            const canUndo = completedLikeStatuses.has(statusKey);
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${escapeHtml(String(reservation.userName || reservation.customerName || 'Unknown'))}</td>
@@ -270,8 +306,10 @@ function renderReservations() {
                 <td><span class="ad-status ${statusClass}">${statusLabel}</span></td>
                 <td>
                     ${canChange ? `
-                        <button class="ad-btn" type="button" data-action="mark-completed" data-reservation-id="${reservation.docId}">Mark as Completed</button>
-                        <button class="ad-btn" type="button" data-action="cancel-reservation" data-reservation-id="${reservation.docId}">Cancel</button>
+                        <button class="ad-btn" type="button" data-action="approve-reservation" data-reservation-id="${reservation.docId}">Approve</button>
+                        <button class="ad-btn" type="button" data-action="reject-reservation" data-reservation-id="${reservation.docId}">Reject</button>
+                    ` : canUndo ? `
+                        <button class="ad-btn ad-btn-undo" type="button" data-action="undo-reservation" data-reservation-id="${reservation.docId}">Undo</button>
                     ` : '--'}
                 </td>
             `;
@@ -324,6 +362,34 @@ function renderInventory() {
         el.inventoryBody.appendChild(tr);
     });
     updatePaging(page, totalPages);
+}
+
+function renderSupportTickets() {
+    if (!el.supportBody) return;
+    const tickets = [...state.supportTickets].sort((a, b) => getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt));
+    el.supportBody.innerHTML = '';
+
+    if (!tickets.length) {
+        if (el.supportEmpty) el.supportEmpty.style.display = 'block';
+        return;
+    }
+    if (el.supportEmpty) el.supportEmpty.style.display = 'none';
+
+    tickets.forEach((ticket) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${escapeHtml(String(ticket.name || '--'))}</td>
+            <td>${escapeHtml(String(ticket.role || '--'))}</td>
+            <td>${escapeHtml(String(ticket.message || '--'))}</td>
+            <td>${formatDate(ticket.createdAt)}</td>
+            <td>
+                <button class="ad-btn ad-btn-undo" type="button" data-action="resolve-support" data-ticket-id="${ticket.docId}">
+                    Resolve
+                </button>
+            </td>
+        `;
+        el.supportBody.appendChild(tr);
+    });
 }
 
 function updatePaging(page, totalPages) {
@@ -441,6 +507,7 @@ function focusSection(sectionKey) {
         dashboard: el.dashboardSection,
         reservations: el.reservationsSection,
         inventory: el.inventorySection,
+        support: el.supportSection,
     };
     map[sectionKey]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -450,6 +517,15 @@ function setActiveNav(sectionKey) {
         const isActive = String(link.getAttribute('data-ad-nav') || '') === sectionKey;
         link.classList.toggle('active', isActive);
     });
+}
+
+function activateReservationFilter(filterKey) {
+    state.reservationFilter = filterKey;
+    el.reservationFilters.forEach((button) => {
+        const isActive = String(button.getAttribute('data-res-filter') || '') === filterKey;
+        button.classList.toggle('active', isActive);
+    });
+    renderReservations();
 }
 
 function getReservationsByFilter(filter) {
@@ -462,14 +538,15 @@ function getFilteredReservationsByStatus(kind) {
     return state.reservations.filter((reservation) => {
         const status = String(reservation.status || '').toLowerCase();
         const activeStatuses = new Set(['active', 'pending', 'confirmed']);
-        const completedStatuses = new Set(['completed', 'cancelled', 'picked up', 'picked_up']);
+        const completedStatuses = new Set(['approved', 'rejected', 'completed', 'cancelled', 'picked up', 'picked_up']);
         return kind === 'active' ? activeStatuses.has(status) : completedStatuses.has(status);
     });
 }
 
 function getReservationClass(statusRaw) {
     const status = String(statusRaw || '').toLowerCase();
-    if (status === 'cancelled') return 'cancelled';
+    if (status === 'rejected' || status === 'cancelled') return 'cancelled';
+    if (status === 'approved') return 'completed';
     if (new Set(['completed', 'picked up', 'picked_up']).has(status)) return 'completed';
     return 'active';
 }
@@ -523,6 +600,9 @@ async function updateReservationStatus(reservationDocId, nextStatus, options = {
         updatedAt: serverTimestamp(),
     };
     await setDoc(doc(db, 'reservations', reservationDocId), payload, { merge: true });
+    if (nextStatus === 'approved' || nextStatus === 'rejected') {
+        await createReservationNotification(reservation, nextStatus);
+    }
 
     if (options.makeBookAvailable) {
         const bookDocId = findBookDocIdForReservation(reservation);
@@ -534,6 +614,31 @@ async function updateReservationStatus(reservationDocId, nextStatus, options = {
             );
         }
     }
+}
+
+async function createReservationNotification(reservation, status) {
+    const userId = String(reservation.userId || '').trim();
+    const userPhone = String(reservation.userPhone || '').trim();
+    if (!userId && !userPhone) return;
+
+    const bookTitle = String(reservation.title || reservation.bookTitle || 'your reservation').trim();
+    const isApproved = status === 'approved';
+    const title = isApproved ? 'Reservation Approved' : 'Reservation Rejected';
+    const body = isApproved
+        ? `The library owner approved your request for "${bookTitle}".`
+        : `The library owner rejected your request for "${bookTitle}".`;
+
+    await addDoc(collection(db, 'notifications'), {
+        userId,
+        userPhone,
+        reservationId: String(reservation.docId || ''),
+        status,
+        title,
+        body,
+        read: false,
+        targetUrl: 'profile.html',
+        createdAt: serverTimestamp(),
+    });
 }
 
 function findBookDocIdForReservation(reservation) {

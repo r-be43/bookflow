@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <title>Reservations Submitted — LibraShelf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head>
+<body class="home-page home-page--premium mobile-premium-page">
+    <div class="premium-bg-mesh home-bg-mesh" aria-hidden="true"></div>
+
+    <nav class="top-nav top-nav--premium">
+        <div class="nav-brand-premium">
+            <span class="nav-brand-icon" aria-hidden="true">📚</span>
+            <span class="nav-brand-text">LibraShelf</span>
+        </div>
+        <div class="top-nav-actions" style="display:flex; align-items:center; gap:10px;">
+            <a href="cart.html" class="cart-link icon-btn icon-btn--premium" aria-label="Open cart">
+                <span class="material-icons-outlined">shopping_cart</span>
+            </a>
+            <a href="profile.html" class="category-chip active" style="padding:8px 14px; font-size:0.78rem;">Profile</a>
+        </div>
+    </nav>
+
+    <main class="home-container home-container--premium checkout-success-main">
+        <section class="checkout-success-card">
+            <span class="material-icons-outlined checkout-success-icon">check_circle</span>
+            <h1>Reservations Submitted</h1>
+            <p>Your reservation requests were sent successfully.</p>
+            <div class="checkout-success-stats">
+                <div><span>Created</span><strong id="success-created-count">0</strong></div>
+                <div><span>Skipped (duplicates)</span><strong id="success-skipped-count">0</strong></div>
+            </div>
+            <div class="checkout-success-actions">
+                <a href="index.html" class="btn-primary btn-primary--premium">Back to Home</a>
+                <a href="cart.html" class="btn-secondary btn-secondary--premium">View Cart</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="site-footer__grid">
+            <div class="site-footer__col">
+                <h3>LibraShelf</h3>
+                <p>Your gateway to endless stories.</p>
+            </div>
+            <div class="site-footer__col">
+                <h4>Quick Links</h4>
+                <a href="index.html">Home</a>
+                <a href="index.html#browse-categories-heading">Categories</a>
+                <a href="cart.html">Cart</a>
+                <a href="profile.html">About</a>
+            </div>
+            <div class="site-footer__col">
+                <h4>Connect</h4>
+                <a href="#" aria-label="Facebook">Facebook</a>
+                <a href="#" aria-label="Instagram">Instagram</a>
+                <a href="#" aria-label="Twitter">Twitter</a>
+                <p class="site-footer__contact">Contact: support@librashelf.com</p>
+            </div>
+        </div>
+        <div class="site-footer__bottom">
+            <span>&copy; 2026 LibraShelf. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <nav class="bottom-nav bottom-nav--premium">
+        <a href="index.html" class="nav-item active">
+            <span class="material-icons-outlined">home</span>
+            <span>Home</span>
+        </a>
+        <a href="favorites.html" class="nav-item">
+            <span class="material-icons-outlined">favorite_border</span>
+            <span>Favorites</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <span class="material-icons-outlined">person_outline</span>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <script type="module">
+        const params = new URLSearchParams(window.location.search);
+        const created = Number(params.get('created') || 0);
+        const skipped = Number(params.get('skipped') || 0);
+        const createdEl = document.getElementById('success-created-count');
+        const skippedEl = document.getElementById('success-skipped-count');
+        if (createdEl) createdEl.textContent = String(Number.isFinite(created) ? created : 0);
+        if (skippedEl) skippedEl.textContent = String(Number.isFinite(skipped) ? skipped : 0);
+    </script>
+</body>
+</html>

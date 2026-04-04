@@ -182,6 +182,18 @@ body.vendor-admin-page {
     border-color: var(--ad-primary);
 }
 
+.ad-btn-undo {
+    background: #fff7ed;
+    color: #b45309;
+    border-color: #fdba74;
+}
+
+.ad-btn-undo:hover {
+    background: #ffedd5;
+    color: #9a3412;
+    border-color: #fb923c;
+}
+
 .ad-filter-btn.active {
     background: var(--ad-primary);
     color: #fff;

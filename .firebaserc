@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "bookflow2004"
-  }
+    "default": "bookflow2004",
+    "alias": "bookflow2004"
+  },
+  "targets": {},
+  "etags": {}
 }

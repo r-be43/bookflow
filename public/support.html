@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <title>Support — LibraShelf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head>
+<body class="home-page home-page--premium mobile-premium-page">
+    <div class="premium-bg-mesh home-bg-mesh" aria-hidden="true"></div>
+
+    <nav class="top-nav top-nav--premium">
+        <div class="nav-brand-premium">
+            <span class="nav-brand-icon" aria-hidden="true">📚</span>
+            <span class="nav-brand-text">LibraShelf</span>
+        </div>
+        <div class="top-nav-actions" style="display:flex; align-items:center; gap:10px;">
+            <a href="index.html" class="category-chip" style="padding:8px 14px; font-size:0.78rem;">Home</a>
+            <a href="cart.html" class="cart-link icon-btn icon-btn--premium" aria-label="Open cart">
+                <span class="material-icons-outlined">shopping_cart</span>
+            </a>
+        </div>
+    </nav>
+
+    <main class="home-container home-container--premium support-page-main">
+        <section class="support-card">
+            <div class="section-header section-header--premium">
+                <h2>Support & Feedback</h2>
+                <span class="section-tag section-tag--teal">We listen</span>
+            </div>
+            <p class="support-subtitle">Share your feedback, issue, or request. Our team will review it shortly.</p>
+
+            <form id="support-form" class="support-form">
+                <div class="support-form-grid">
+                    <div class="form-group">
+                        <label for="support-name">Name</label>
+                        <input id="support-name" class="form-input" type="text" required placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="support-role">Role</label>
+                        <select id="support-role" class="form-select" required>
+                            <option value="">Select role</option>
+                            <option value="user">User</option>
+                            <option value="vendor">Vendor</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="support-message">Message</label>
+                    <textarea id="support-message" class="form-input" rows="6" required placeholder="Tell us how we can help..."></textarea>
+                </div>
+                <button id="support-submit-btn" type="submit" class="btn-primary btn-primary--premium">Submit Feedback</button>
+            </form>
+        </section>
+    </main>
+
+    <nav class="bottom-nav bottom-nav--premium">
+        <a href="index.html" class="nav-item">
+            <span class="material-icons-outlined">home</span>
+            <span>Home</span>
+        </a>
+        <a href="favorites.html" class="nav-item">
+            <span class="material-icons-outlined">favorite_border</span>
+            <span>Favorites</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <span class="material-icons-outlined">person_outline</span>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <script type="module" src="java/support.js"></script>
+</body>
+</html>

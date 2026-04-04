@@ -1,25 +1,37 @@
 // details.js
 import {
+    addDoc,
     collection,
     doc,
     getDoc,
     getDocs,
     limit,
     query,
+    serverTimestamp,
     where
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
-import { db } from './firebase-client.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { auth, db } from './firebase-client.js';
 import { safeStorage } from './storage.js';
-import { createReservation } from '../js/booking.js';
 import { getVendorProfileById } from './vendors-firestore-service.js';
 
 const BOOK_BTN_DEFAULT = 'Book Now';
 const BOOK_BTN_PROCESSING = 'Processing...';
 const BOOK_BTN_CONFIRMED = 'Confirmed ✅';
+const RESERVATION_DUPLICATE_WINDOW_MINUTES = 30;
 let allBooks = [];
+let reservationHandlersBound = false;
+let currentModalBook = null;
+let currentDetailBook = null;
+let delegatedActionsBound = false;
+let currentLibraryName = '';
+let cachedResolvedUser = undefined;
 
 window.addEventListener('DOMContentLoaded', () => {
     initDetailsPage();
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'cartItems') updateDetailCartBadge();
+    });
 });
 
 async function initDetailsPage() {
@@ -48,10 +60,13 @@ async function initDetailsPage() {
 
     const extended = getBookDetailExtended(book);
     applyReadingDirection(book);
+    bindDetailActionDelegation();
     displayBookDetails(extended);
+    setupDetailCartUI();
     await renderVendorLibrary(extended);
     await renderRelatedBooks(extended);
     setupDetailFavoriteToggle(book);
+    await setupSaveBookButton(book);
 }
 
 function applyReadingDirection(book) {
@@ -61,6 +76,7 @@ function applyReadingDirection(book) {
 }
 
 function displayBookDetails(book) {
+    currentDetailBook = book;
     const bookId = normalizeBookId(book.id);
 
     document.getElementById('detail-title').textContent = book.title;
@@ -234,6 +250,8 @@ async function renderVendorLibrary(book) {
 
     const vendorId = String(book?.vendorId || '').trim();
     if (!vendorId) {
+        currentLibraryName = '';
+        populateModalLibraryField(book);
         if (countElement) countElement.textContent = '0 branches';
         container.innerHTML = '<div class="no-books-found">Vendor information is unavailable.</div>';
         return;
@@ -253,6 +271,8 @@ async function renderVendorLibrary(book) {
         available: true,
     };
 
+    currentLibraryName = library.name;
+    populateModalLibraryField(book);
     if (countElement) countElement.textContent = '1 branch';
     container.appendChild(createLibraryItem(library));
 }
@@ -343,47 +363,11 @@ function showError(message) {
     }
 }
 
-function setupReservation(book) {
-    const reserveBtn = document.getElementById('reserve-btn');
-    const modal = document.getElementById('reserve-modal');
-    const modalClose = document.getElementById('modal-close');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const bookBtn = document.getElementById('bookBtn');
-
-    if (!reserveBtn || !modal || !bookBtn) return;
-
-    reserveBtn.addEventListener('click', () => {
-        if (reserveBtn.disabled) return;
-        openReserveModal(book);
-    });
-
-    modalClose.addEventListener('click', closeReserveModal);
-    cancelBtn.addEventListener('click', closeReserveModal);
-
-    modalClose.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') closeReserveModal();
-    });
-
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeReserveModal();
-        }
-    });
-
-    bookBtn.addEventListener('click', () => {
-        confirmReservation(book);
-    });
-
-    const pickupDate = document.getElementById('pickup-date');
-    if (pickupDate) {
-        const today = new Date().toISOString().split('T')[0];
-        pickupDate.setAttribute('min', today);
-        pickupDate.value = today;
-    }
-}
-
 function openReserveModal(book) {
     const modal = document.getElementById('reserve-modal');
+    if (!modal) return;
+    currentModalBook = book || null;
+    populateModalLibraryField(book);
 
     const modalCover = document.getElementById('modal-book-cover');
     modalCover.src = book.image;
@@ -397,18 +381,42 @@ function openReserveModal(book) {
 
     const user = getUserData();
     const nameInput = document.getElementById('userName');
+    const phoneInput = document.getElementById('user-phone');
     if (nameInput) nameInput.value = user.name || '';
+    if (phoneInput) phoneInput.value = user.phone || '';
 
     resetBookButton();
 
+    modal.classList.remove('hidden');
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
 function closeReserveModal() {
     const modal = document.getElementById('reserve-modal');
+    if (!modal) return;
     modal.classList.remove('active');
+    modal.classList.add('hidden');
     document.body.style.overflow = '';
+}
+
+function populateModalLibraryField(book) {
+    const librarySelect = document.getElementById('library-select');
+    if (!librarySelect) return;
+
+    const vendorId = String(book?.vendorId || currentDetailBook?.vendorId || '').trim();
+    const displayName = String(currentLibraryName || '').trim() || (vendorId ? `Vendor ${vendorId}` : 'Library');
+    const optionValue = displayName;
+
+    librarySelect.innerHTML = '';
+    const option = document.createElement('option');
+    option.value = optionValue;
+    option.textContent = displayName;
+    option.selected = true;
+    librarySelect.appendChild(option);
+    librarySelect.value = optionValue;
+    librarySelect.setAttribute('aria-readonly', 'true');
+    librarySelect.disabled = true;
 }
 
 function resetBookButton() {
@@ -441,6 +449,7 @@ async function confirmReservation(book) {
     const userNameEl = document.getElementById('userName');
     const userPhone = document.getElementById('user-phone').value;
     const userName = userNameEl ? userNameEl.value : '';
+    const authUser = await getCurrentAuthUser();
 
     if (!library) {
         showToast('Please select a library', 'error');
@@ -465,40 +474,80 @@ async function confirmReservation(book) {
     setBookButtonProcessing();
 
     try {
-        const reservationId = await createReservation(String(book.id), userName.trim(), {
-            onConfirmed: () => {
-                setBookButtonConfirmed();
+        const duplicate = await hasRecentDuplicateReservation(
+            String(book.id),
+            userPhone.trim(),
+            RESERVATION_DUPLICATE_WINDOW_MINUTES
+        );
+        if (duplicate) {
+            resetBookButton();
+            showToast('A similar reservation already exists. Please wait before retrying.', 'info');
+            return;
+        }
 
-                const reservation = {
-                    id: reservationId,
-                    firebaseStatus: 'confirmed',
-                    bookId: book.id,
-                    title: book.title,
-                    author: book.author,
-                    image: book.image,
-                    library: library,
-                    pickupDate: pickupDate,
-                    userName: userName.trim(),
-                    userPhone: userPhone.trim(),
-                    status: 'Confirmed',
-                    date: new Date().toLocaleDateString(),
-                };
-                saveReservation(reservation);
+        const payload = {
+            bookId: String(book.id),
+            title: String(book.title || ''),
+            price: Number(book.price || 0),
+            vendorId: String(book.vendorId || ''),
+            library: String(library || ''),
+            pickupDate: String(pickupDate || ''),
+            userName: userName.trim(),
+            userPhone: userPhone.trim(),
+            userId: String(authUser?.uid || ''),
+            userEmail: String(authUser?.email || ''),
+            status: 'pending',
+            createdAt: serverTimestamp(),
+        };
 
-                closeReserveModal();
-                showToast('Reservation confirmed! ✅', 'success');
+        const reservationRef = await addDoc(collection(db, 'reservations'), payload);
+        setBookButtonConfirmed();
 
-                document.getElementById('library-select').value = '';
-                document.getElementById('user-phone').value = '';
-            },
-            onError: (err) => {
-                resetBookButton();
-                const msg = err?.message || err?.code || 'Reservation failed. Please try again.';
-                alert(msg);
-            },
+        saveReservation({
+            id: reservationRef.id,
+            ...payload,
+            status: 'pending',
+            date: new Date().toLocaleDateString(),
         });
-    } catch {
+
+        closeReserveModal();
+        showToast('Reservation submitted successfully ✅', 'success');
+
+        document.getElementById('library-select').value = '';
+        document.getElementById('user-phone').value = '';
+    } catch (error) {
+        console.error('Failed to write reservation:', error);
         resetBookButton();
+        showToast('Reservation failed. Please try again.', 'error');
+    }
+}
+
+async function hasRecentDuplicateReservation(bookId, userPhone, withinMinutes = 30) {
+    const normalizedBookId = String(bookId || '').trim();
+    const normalizedPhone = String(userPhone || '').trim();
+    if (!normalizedBookId || !normalizedPhone) return false;
+
+    try {
+        const phoneQuery = query(
+            collection(db, 'reservations'),
+            where('userPhone', '==', normalizedPhone),
+            limit(30)
+        );
+        const snap = await getDocs(phoneQuery);
+        if (snap.empty) return false;
+
+        const now = Date.now();
+        const maxAgeMs = withinMinutes * 60 * 1000;
+        return snap.docs.some((docSnap) => {
+            const data = docSnap.data() || {};
+            if (String(data.bookId || '').trim() !== normalizedBookId) return false;
+            const createdAtMs = typeof data.createdAt?.toMillis === 'function' ? data.createdAt.toMillis() : 0;
+            if (!createdAtMs) return false;
+            return now - createdAtMs <= maxAgeMs;
+        });
+    } catch (error) {
+        console.warn('Duplicate reservation check failed:', error);
+        return false;
     }
 }
 
@@ -522,10 +571,21 @@ function getUserData() {
     const stored = safeStorage.get('user');
     if (stored) {
         try {
-            return JSON.parse(stored);
+            const parsed = JSON.parse(stored) || {};
+            return {
+                name: String(parsed.name || auth.currentUser?.displayName || 'Guest User'),
+                email: String(parsed.email || auth.currentUser?.email || ''),
+                phone: String(parsed.phone || ''),
+                uid: String(parsed.uid || auth.currentUser?.uid || ''),
+            };
         } catch (e) {}
     }
-    return { name: 'Guest User', email: 'guest@books.com' };
+    return {
+        name: String(auth.currentUser?.displayName || 'Guest User'),
+        email: String(auth.currentUser?.email || 'guest@books.com'),
+        phone: '',
+        uid: String(auth.currentUser?.uid || ''),
+    };
 }
 
 async function fetchBooksFromCloud() {
@@ -576,23 +636,16 @@ function mapBookDoc(docSnap) {
         sampleUrl: data.sampleUrl || '',
         vendorId: data.vendorId || '',
         vendorPhone: data.vendorPhone || data.sellerPhone || '',
+        status: String(data.status || '').trim().toLowerCase(),
+        publisher: String(data.publisher || '').trim(),
+        authorBio: String(data.authorBio || data.author_bio || '').trim(),
+        isbn: String(data.isbn || '').trim(),
+        publicationDate: String(data.publicationDate || data.publishedAt || '').trim(),
     };
 }
 
 function normalizeBookId(id) {
     return String(id ?? '').trim();
-}
-
-function getNumericSeed(id) {
-    const value = normalizeBookId(id);
-    const asNumber = Number.parseInt(value, 10);
-    if (Number.isFinite(asNumber)) return asNumber;
-
-    let hash = 0;
-    for (let i = 0; i < value.length; i += 1) {
-        hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
-    }
-    return hash || 1;
 }
 
 function getFavorites() {
@@ -637,17 +690,100 @@ function setupDetailFavoriteToggle(book) {
     });
 }
 
-function setupCommerceActions(book) {
-    const buyBtn = document.getElementById('buy-btn');
-    const quickBuyBtn = document.getElementById('quick-buy-btn');
-    const sampleBtn = document.getElementById('sample-btn');
-    if (!buyBtn && !quickBuyBtn && !sampleBtn) return;
+async function setupSaveBookButton(book) {
+    const saveBtn = document.getElementById('save-book-btn');
+    if (!saveBtn || !book) return;
 
-    if (buyBtn) {
-        buyBtn.onclick = () => {
-            if (buyBtn.disabled) return;
-            showToast('Proceeding to checkout...', 'info');
+    const user = await getCurrentAuthUser();
+    if (!user) {
+        updateSaveButtonUi(saveBtn, false);
+        saveBtn.onclick = () => {
+            showToast('Please login to save books.', 'info');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 400);
         };
+        return;
+    }
+
+    const bookId = normalizeBookId(book.id);
+    if (!bookId) return;
+    const alreadySaved = await isBookSavedByUser(user.uid, bookId);
+    updateSaveButtonUi(saveBtn, alreadySaved);
+
+    saveBtn.onclick = async () => {
+        if (saveBtn.disabled) return;
+        if (saveBtn.dataset.saved === 'true') {
+            showToast('Book already saved.', 'info');
+            return;
+        }
+
+        saveBtn.disabled = true;
+        try {
+            await addDoc(collection(db, 'saved_books'), {
+                userId: String(user.uid),
+                bookId,
+                title: String(book.title || ''),
+                author: String(book.author || ''),
+                image: String(book.image || ''),
+                vendorId: String(book.vendorId || ''),
+                createdAt: serverTimestamp(),
+            });
+            updateSaveButtonUi(saveBtn, true);
+            showToast('Book saved successfully.', 'success');
+        } catch (error) {
+            console.error('Failed to save book:', error);
+            showToast('Could not save this book. Try again.', 'error');
+        } finally {
+            saveBtn.disabled = false;
+        }
+    };
+}
+
+function updateSaveButtonUi(button, isSaved) {
+    const icon = button?.querySelector('.material-icons-outlined');
+    const label = button?.querySelector('.save-book-label');
+    button.dataset.saved = isSaved ? 'true' : 'false';
+    button.classList.toggle('active', isSaved);
+    if (icon) icon.textContent = isSaved ? 'bookmark_added' : 'bookmark_add';
+    if (label) label.textContent = isSaved ? 'Saved' : 'Save';
+}
+
+async function isBookSavedByUser(userId, bookId) {
+    if (!userId || !bookId) return false;
+    try {
+        const existingQuery = query(
+            collection(db, 'saved_books'),
+            where('userId', '==', String(userId)),
+            where('bookId', '==', String(bookId)),
+            limit(1)
+        );
+        const snap = await getDocs(existingQuery);
+        return !snap.empty;
+    } catch (error) {
+        console.warn('Saved-book lookup failed:', error);
+        return false;
+    }
+}
+
+function getCurrentAuthUser() {
+    if (auth.currentUser) return Promise.resolve(auth.currentUser);
+    if (cachedResolvedUser !== undefined) return Promise.resolve(cachedResolvedUser);
+
+    return new Promise((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            unsubscribe();
+            cachedResolvedUser = user || null;
+            resolve(cachedResolvedUser);
+        });
+    });
+}
+
+function setupCommerceActions(book) {
+    const quickBuyBtn = document.getElementById('quick-buy-btn');
+    if (!quickBuyBtn) {
+        setupReservationModalHandlers(book);
+        return;
     }
 
     if (quickBuyBtn) {
@@ -674,15 +810,146 @@ function setupCommerceActions(book) {
         };
     }
 
-    if (sampleBtn) {
-        sampleBtn.onclick = () => {
-            const url = String(book.sampleUrl || '').trim();
+    setupReservationModalHandlers(book);
+}
+
+function bindDetailActionDelegation() {
+    if (delegatedActionsBound) return;
+    delegatedActionsBound = true;
+
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+
+        const buyBtn = target.closest('#buy-btn');
+        if (buyBtn) {
+            event.preventDefault();
+            if (!currentDetailBook) {
+                showToast('Book details are still loading...', 'info');
+                return;
+            }
+            if (buyBtn.hasAttribute('disabled')) return;
+            openReserveModal(currentDetailBook);
+            return;
+        }
+
+        const addToCartBtn = target.closest('#add-to-cart-btn');
+        if (addToCartBtn) {
+            event.preventDefault();
+            if (!currentDetailBook) {
+                showToast('Book details are still loading...', 'info');
+                return;
+            }
+            addBookToCart(currentDetailBook);
+            return;
+        }
+
+        const sampleBtn = target.closest('#sample-btn');
+        if (sampleBtn) {
+            event.preventDefault();
+            if (!currentDetailBook) {
+                showToast('Book details are still loading...', 'info');
+                return;
+            }
+            const url = String(currentDetailBook.sampleUrl || '').trim();
             if (!url) {
                 showToast('Sample is not available for this title yet.', 'info');
                 return;
             }
             window.open(url, '_blank', 'noopener,noreferrer');
-        };
+        }
+    });
+}
+
+function setupReservationModalHandlers(book) {
+    const modal = document.getElementById('reserve-modal');
+    const modalClose = document.getElementById('modal-close');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const bookBtn = document.getElementById('bookBtn');
+    if (!modal || !modalClose || !cancelBtn || !bookBtn) return;
+
+    // Keep latest book context when navigating between details pages.
+    modal.dataset.currentBookId = normalizeBookId(book.id);
+
+    if (reservationHandlersBound) return;
+    reservationHandlersBound = true;
+
+    const close = () => closeReserveModal();
+
+    modalClose.addEventListener('click', close);
+    cancelBtn.addEventListener('click', close);
+    modalClose.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') close();
+    });
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) close();
+    });
+
+    bookBtn.addEventListener('click', async () => {
+        const targetBook = currentModalBook;
+        if (!targetBook) {
+            showToast('Book details not found.', 'error');
+            return;
+        }
+        await confirmReservation(targetBook);
+    });
+
+    const pickupDate = document.getElementById('pickup-date');
+    if (pickupDate) {
+        const today = new Date().toISOString().split('T')[0];
+        pickupDate.setAttribute('min', today);
+        pickupDate.value = today;
+    }
+}
+
+function setupDetailCartUI() {
+    updateDetailCartBadge();
+}
+
+function updateDetailCartBadge() {
+    const badge = document.getElementById('detail-cart-count-badge');
+    if (!badge) return;
+    const items = getCartItems();
+    badge.textContent = String(items.length);
+    badge.classList.toggle('hidden', items.length === 0);
+}
+
+function addBookToCart(book) {
+    const cart = getCartItems();
+    const bookId = normalizeBookId(book?.id);
+    if (!bookId) {
+        showToast('Book info is incomplete.', 'error');
+        return;
+    }
+
+    const exists = cart.some((item) => normalizeBookId(item.bookId) === bookId);
+    if (exists) {
+        showToast('This book is already in your cart.', 'info');
+        return;
+    }
+
+    cart.push({
+        bookId,
+        title: String(book.title || ''),
+        author: String(book.author || ''),
+        image: String(book.image || ''),
+        price: Number(book.price || 0),
+        vendorId: String(book.vendorId || ''),
+        addedAt: Date.now(),
+    });
+    safeStorage.set('cartItems', JSON.stringify(cart));
+    updateDetailCartBadge();
+    showToast('Added to cart 🛒', 'success');
+}
+
+function getCartItems() {
+    const raw = safeStorage.get('cartItems');
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
     }
 }
 
@@ -693,32 +960,6 @@ function formatPrice(value) {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(Number(value) || 0);
-}
-
-const PUBLISHERS = [
-    'Penguin Classics', 'HarperCollins', 'Simon & Schuster', 'Random House',
-    'Oxford University Press', 'Vintage Books', 'Anchor Books', 'Scribner'
-];
-
-const AUTHOR_BIOS = {
-    'J.K. Rowling': "British author best known for the Harry Potter series, which became a global phenomenon and redefined modern children's literature.",
-    'James Clear': 'Author and speaker focused on habits, decision-making, and continuous improvement; his work emphasizes small, repeatable changes.',
-    'J.R.R. Tolkien': 'Professor and philologist whose epic fantasy works, including The Hobbit and The Lord of the Rings, shaped the modern fantasy genre.',
-    'George Orwell': 'Journalist and novelist whose sharp critiques of totalitarianism and social injustice remain essential reading worldwide.',
-    'Yuval Noah Harari': "Historian and bestselling author exploring humanity's past and future through big-picture narratives bridging science and culture.",
-    'Patrick Rothfuss': 'Fantasy author celebrated for lyrical prose and intricate world-building in The Kingkiller Chronicle series.',
-    'Harper Lee': 'American novelist whose To Kill a Mockingbird remains one of the most influential works on race and justice in the United States.',
-    'Paulo Coelho': 'Brazilian lyricist and novelist whose allegorical storytelling has reached readers in more than eighty languages.',
-    'Stephen Hawking': 'Theoretical physicist and author who brought cosmology and black holes to millions through clear, passionate prose.',
-    'Carl Sagan': 'Astronomer and science communicator who inspired generations to look up at the cosmos with wonder and skepticism.',
-    'طه حسين': 'أديب وناقد مصري، من أعلام النهضة العربية، اشتهر بسيرته الذاتية «الأيام» وأعماله في الأدب والفلسفة.',
-    'الطيب صالح': 'روائي سوداني صاحب أسلوب سردي متميز، تناول في أعماله الهوية والاستعمار والهجرة.',
-    'غسان كنفاني': 'كاتب ومناضل فلسطيني، من أبرز أدباء المقاومة، اشتهر بقصصه القصيرة ورواياته عن القضية الفلسطينية.'
-};
-
-function pickPublisher(year) {
-    const idx = Math.abs((year || 0) % PUBLISHERS.length);
-    return PUBLISHERS[idx];
 }
 
 function genreTagsFromCategory(category) {
@@ -736,35 +977,26 @@ function genreTagsFromCategory(category) {
 
 function getBookDetailExtended(book) {
     if (!book) return null;
-    const seed = getNumericSeed(book.id);
-    const publisher = pickPublisher(book.year);
-    const month = ['January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'][seed % 12];
-    const publicationDisplay = `${month} ${book.year}`;
-    const copiesSeed = (seed * 7) % 8;
-    const copiesAvailable = copiesSeed === 0 ? 0 : copiesSeed;
-    const stockStatus = copiesAvailable === 0 ? 'out' : 'in';
-    const stockLabel = copiesAvailable === 0
-        ? 'Out of Stock'
-        : `${copiesAvailable} ${copiesAvailable === 1 ? 'copy' : 'copies'} available`;
-
-    const synopsisP2 = `Across libraries and reading communities, ${book.title} continues to spark discussion and discovery. This synopsis highlights themes of character, conflict, and craft-inviting you to reserve a physical copy and experience the full arc at your own pace.`;
-
-    const authorBio = AUTHOR_BIOS[book.author]
-        || `${book.author} is a widely read author whose work spans ${book.category.toLowerCase()} and resonates with contemporary audiences.`;
+    const publicationDisplay = String(book.publicationDate || '').trim() || (book.year ? String(book.year) : '—');
+    const normalizedStatus = String(book.status || '').trim().toLowerCase();
+    const stockStatus = normalizedStatus === 'unavailable' || normalizedStatus === 'out' ? 'out' : 'in';
+    const stockLabel = stockStatus === 'out' ? 'Out of Stock' : 'Available';
+    const synopsisP2 = '';
+    const authorBio = String(book.authorBio || '').trim() || 'Author information is not available.';
+    const safeIsbn = String(book.isbn || '').trim() || 'N/A';
+    const safePublisher = String(book.publisher || '').trim() || '—';
 
     return {
         ...book,
-        synopsisP1: book.description,
+        synopsisP1: String(book.description || '').trim() || 'No synopsis available for this title yet.',
         synopsisP2,
         authorBio,
         genres: genreTagsFromCategory(book.category),
-        publisher,
+        publisher: safePublisher,
         publicationDisplay,
-        copiesAvailable,
         stockStatus,
         stockLabel,
-        isbn: `978-0-${String(1000000 + seed).slice(0, 6)}-${String(seed).padStart(2, '0')}`
+        isbn: safeIsbn,
     };
 }
 

@@ -26,6 +26,9 @@
                 <a href="#" class="ad-nav-link" data-ad-nav="inventory">
                     <span class="material-icons-outlined">inventory_2</span>Inventory
                 </a>
+                <a href="#" class="ad-nav-link" data-ad-nav="support">
+                    <span class="material-icons-outlined">support_agent</span>Support Messages
+                </a>
                 <button id="ad-logout-btn" class="ad-logout-btn" type="button">
                     <span class="material-icons-outlined">logout</span>Logout
                 </button>
@@ -109,6 +112,27 @@
                     <span id="ad-inventory-page-info">Page 1 of 1</span>
                     <button id="ad-inventory-next" class="ad-btn" type="button">Next</button>
                 </div>
+            </section>
+
+            <section class="ad-section" id="ad-section-support">
+                <div class="ad-section-head">
+                    <h2>Support Messages</h2>
+                </div>
+                <div class="ad-table-wrap">
+                    <table class="ad-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Message</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ad-support-body"></tbody>
+                    </table>
+                </div>
+                <p id="ad-support-empty" class="ad-empty" style="display:none;">No support messages found.</p>
             </section>
         </main>
     </div>
