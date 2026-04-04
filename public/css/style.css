@@ -2574,7 +2574,9 @@ body[dir="rtl"] .lib-status {
     position: absolute;
     top: 50px;
     right: 0;
-    width: 320px;
+    width: min(90vw, 350px);
+    max-width: 350px;
+    max-height: 60vh;
     background: white;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
@@ -2596,10 +2598,10 @@ body[dir="rtl"] .lib-status {
         position: fixed;
         top: 68px;
         right: 10px;
-        left: 10px;
-        width: auto;
-        max-width: 420px;
-        margin-left: auto;
+        left: auto;
+        width: min(90vw, 350px);
+        max-width: 350px;
+        max-height: 60vh;
         z-index: 10000;
     }
 }
@@ -2629,7 +2631,7 @@ body[dir="rtl"] .lib-status {
 .notif-header span:hover { text-decoration: underline; }
 
 .notif-list {
-    max-height: 320px;
+    max-height: calc(60vh - 110px);
     overflow-y: auto;
     scrollbar-width: none;
 }
@@ -2646,6 +2648,7 @@ body[dir="rtl"] .lib-status {
     padding: 20px 18px;
     text-align: center;
     color: #64748b;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 
 .notif-empty-state__icon {
@@ -2815,6 +2818,41 @@ body[dir="rtl"] .lib-status {
 }
 
 .notif-footer a:hover { text-decoration: underline; }
+
+/* ==========================================
+   Notifications Page
+   ========================================== */
+.notifications-page-main {
+    padding-top: clamp(10px, 2vw, 20px);
+}
+
+.notifications-page-card {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(30, 58, 95, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(30, 58, 95, 0.08);
+    padding: clamp(14px, 2.6vw, 24px);
+}
+
+.notifications-page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.notifications-page-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notifications-page-list .notif-item {
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 12px;
+}
 
 /* ==========================================
    صفحة البروفايل

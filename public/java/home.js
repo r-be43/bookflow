@@ -376,7 +376,6 @@ function setupNotifications() {
         const willOpen = !isNotificationDropdownOpen(dropdown);
         if (willOpen) {
             openNotificationDropdown(dropdown, notifBtn);
-            await markAllNotificationsRead();
         } else {
             closeNotificationDropdown(dropdown, notifBtn);
         }
@@ -466,7 +465,8 @@ function updateBadgeCount(unreadCount) {
 function renderNotifications(items) {
     const list = document.getElementById('notification-list');
     if (!list) return;
-    const sorted = [...items];
+    const sorted = [...items].sort((a, b) => getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt));
+    const displayItems = sorted.slice(0, 3);
     list.innerHTML = '';
 
     if (!sorted.length) {
@@ -481,8 +481,8 @@ function renderNotifications(items) {
         return;
     }
 
-    let unreadCount = 0;
-    sorted.forEach((item) => {
+    const unreadCount = sorted.filter((item) => item.isRead !== true).length;
+    displayItems.forEach((item) => {
         const unread = item.isRead !== true;
         const type = String(item.type || '').trim().toLowerCase();
         const isApproved = type === 'approved';
@@ -492,7 +492,6 @@ function renderNotifications(items) {
             : `Your request for ${String(item.bookTitle || 'this book')} was declined. Reason: ${String(item.reason || 'Not specified')}.`;
         const icon = isApproved ? '✅' : '❌';
         const typeClass = isApproved ? 'notif-approved' : 'notif-rejected';
-        if (unread) unreadCount += 1;
         const node = document.createElement('div');
         node.className = `notif-item ${typeClass}${unread ? ' unread' : ' read'}`;
         node.setAttribute('data-id', String(item.id || ''));
