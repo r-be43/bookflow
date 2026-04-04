@@ -207,7 +207,7 @@ input::placeholder {
     background-color: var(--bg-card);
     position: sticky;
     top: 0;
-    z-index: 500;
+    z-index: 1000;
     box-shadow: var(--shadow-sm);
     overflow: visible;
 }
@@ -482,11 +482,16 @@ body.mobile-premium-page {
         radial-gradient(ellipse 50% 35% at 85% 15%, rgba(13, 148, 136, 0.09), transparent 50%);
 }
 
-.home-page--premium .top-nav,
 .home-page--premium .home-container,
 .home-page--premium .home-hero {
     position: relative;
     z-index: 1;
+}
+
+.home-page--premium .top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 /* Keep hero flush with next section */
@@ -591,6 +596,10 @@ body.mobile-premium-page .premium-page-main {
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(30, 58, 95, 0.08);
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    overflow: visible;
 }
 
 .nav-brand-premium {
@@ -2569,7 +2578,7 @@ body[dir="rtl"] .lib-status {
     background: white;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    z-index: 2000;
+    z-index: 9999;
     display: none;
     border: 1px solid #F0F2FF;
     overflow: hidden;
@@ -2579,6 +2588,20 @@ body[dir="rtl"] .lib-status {
 .notification-dropdown.active {
     display: block;
     animation: slideDown 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    #notification-dropdown,
+    .notification-dropdown {
+        position: fixed;
+        top: 68px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        max-width: 420px;
+        margin-left: auto;
+        z-index: 10000;
+    }
 }
 
 .notif-header {
@@ -2654,20 +2677,65 @@ body[dir="rtl"] .lib-status {
 
 .notif-item {
     display: flex;
-    gap: 12px;
-    padding: 14px 20px;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
     cursor: pointer;
     transition: var(--transition-fast);
     border-bottom: 1px solid #FAFAFA;
+    background: #ffffff;
 }
 
 .notif-item:hover { background: var(--bg-input); }
 
 .notif-item.unread {
-    background: var(--color-primary-light);
+    background: #f8fafc;
 }
 
-.notif-item.unread:hover { background: #E5E8FF; }
+.notif-item.unread:hover { background: #eef2ff; }
+
+.notif-item.read {
+    background: #ffffff;
+}
+
+.notif-item__dot {
+    width: 8px;
+    height: 8px;
+    min-width: 8px;
+    margin-top: 8px;
+    border-radius: 50%;
+    background: #2563eb;
+    opacity: 0;
+}
+
+.notif-item.unread .notif-item__dot {
+    opacity: 1;
+}
+
+.notif-item__icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.notif-item.notif-approved .notif-item__icon {
+    background: #dcfce7;
+}
+
+.notif-item.notif-rejected .notif-item__icon {
+    background: #fee2e2;
+}
+
+.notif-item__content {
+    min-width: 0;
+    flex: 1;
+}
 
 .notif-item.notif-approved .notif-item__title {
     color: #166534;
@@ -2688,6 +2756,7 @@ body[dir="rtl"] .lib-status {
     font-size: 0.78rem;
     line-height: 1.4;
     color: var(--text-secondary);
+    white-space: normal;
 }
 
 .notif-item__time {

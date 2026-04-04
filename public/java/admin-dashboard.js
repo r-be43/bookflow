@@ -175,8 +175,8 @@ function bindUiEvents() {
             const reservationId = String(approveBtn.getAttribute('data-reservation-id') || '').trim();
             if (reservationId) {
                 showConfirmModal('Approve this reservation?', async () => {
-                    await updateReservationStatus(reservationId, 'approved');
-                    showToast('Reservation approved', 'success');
+                    await updateReservationStatus(reservationId, 'completed', { notificationType: 'approved' });
+                    showToast('Reservation approved and notification sent', 'success');
                 });
             }
             return;
@@ -199,9 +199,15 @@ function bindUiEvents() {
         if (!rejectBtn) return;
         const reservationId = String(rejectBtn.getAttribute('data-reservation-id') || '').trim();
         if (!reservationId) return;
+        const reason = String(window.prompt('Enter rejection reason:', 'Out of stock') || '').trim();
+        if (!reason) return;
         showConfirmModal('Reject this reservation?', async () => {
-            await updateReservationStatus(reservationId, 'rejected', { makeBookAvailable: true });
-            showToast('Reservation rejected and book marked available', 'success');
+            await updateReservationStatus(reservationId, 'rejected', {
+                makeBookAvailable: true,
+                notificationType: 'rejected',
+                rejectionReason: reason,
+            });
+            showToast('Reservation rejected and notification sent', 'success');
         });
     });
 
@@ -295,7 +301,7 @@ function renderReservations() {
             const statusClass = getReservationClass(reservation.status);
             const statusLabel = getReservationLabel(reservation.status);
             const statusKey = String(reservation.status || '').toLowerCase();
-            const completedLikeStatuses = new Set(['approved', 'rejected', 'completed', 'cancelled', 'picked up', 'picked_up']);
+            const completedLikeStatuses = new Set(['rejected', 'completed', 'cancelled', 'picked up', 'picked_up']);
             const canChange = !completedLikeStatuses.has(statusKey);
             const canUndo = completedLikeStatuses.has(statusKey);
             const tr = document.createElement('tr');
@@ -538,7 +544,7 @@ function getFilteredReservationsByStatus(kind) {
     return state.reservations.filter((reservation) => {
         const status = String(reservation.status || '').toLowerCase();
         const activeStatuses = new Set(['active', 'pending', 'confirmed']);
-        const completedStatuses = new Set(['approved', 'rejected', 'completed', 'cancelled', 'picked up', 'picked_up']);
+        const completedStatuses = new Set(['rejected', 'completed', 'cancelled', 'picked up', 'picked_up']);
         return kind === 'active' ? activeStatuses.has(status) : completedStatuses.has(status);
     });
 }
@@ -546,7 +552,6 @@ function getFilteredReservationsByStatus(kind) {
 function getReservationClass(statusRaw) {
     const status = String(statusRaw || '').toLowerCase();
     if (status === 'rejected' || status === 'cancelled') return 'cancelled';
-    if (status === 'approved') return 'completed';
     if (new Set(['completed', 'picked up', 'picked_up']).has(status)) return 'completed';
     return 'active';
 }
@@ -600,8 +605,8 @@ async function updateReservationStatus(reservationDocId, nextStatus, options = {
         updatedAt: serverTimestamp(),
     };
     await setDoc(doc(db, 'reservations', reservationDocId), payload, { merge: true });
-    if (nextStatus === 'approved' || nextStatus === 'rejected') {
-        await createReservationNotification(reservation, nextStatus);
+    if (options.notificationType === 'approved' || options.notificationType === 'rejected') {
+        await createReservationNotification(reservation, options.notificationType, options.rejectionReason || '');
     }
 
     if (options.makeBookAvailable) {
@@ -616,29 +621,29 @@ async function updateReservationStatus(reservationDocId, nextStatus, options = {
     }
 }
 
-async function createReservationNotification(reservation, status) {
+async function createReservationNotification(reservation, type, reason = '') {
     const userId = String(reservation.userId || '').trim();
     const userPhone = String(reservation.userPhone || '').trim();
     if (!userId && !userPhone) return;
 
-    const bookTitle = String(reservation.title || reservation.bookTitle || 'your reservation').trim();
-    const isApproved = status === 'approved';
-    const title = isApproved ? 'Reservation Approved' : 'Reservation Rejected';
-    const body = isApproved
-        ? `The library owner approved your request for "${bookTitle}".`
-        : `The library owner rejected your request for "${bookTitle}".`;
+    const bookTitle = String(reservation.title || reservation.bookTitle || reservation.bookId || 'Unknown Book').trim();
+    const notificationType = String(type || '').trim().toLowerCase();
+    const rejectionReason = notificationType === 'rejected' ? String(reason || '').trim() : '';
 
-    await addDoc(collection(db, 'notifications'), {
-        userId,
-        userPhone,
-        reservationId: String(reservation.docId || ''),
-        status,
-        title,
-        body,
-        read: false,
-        targetUrl: 'profile.html',
+    // Canonical notification schema for client dropdown rendering.
+    const notificationPayload = {
+        bookTitle,
+        type: notificationType,
+        isRead: false,
         createdAt: serverTimestamp(),
-    });
+    };
+    if (userId) notificationPayload.userId = userId;
+    if (!userId && userPhone) notificationPayload.userPhone = userPhone;
+    if (notificationType === 'rejected' && rejectionReason) {
+        notificationPayload.reason = rejectionReason;
+    }
+
+    await addDoc(collection(db, 'notifications'), notificationPayload);
 }
 
 function findBookDocIdForReservation(reservation) {

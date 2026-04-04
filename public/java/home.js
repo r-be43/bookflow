@@ -1,6 +1,6 @@
 // home.js
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { collection, doc, getDoc, getDocs, onSnapshot, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { collection, doc, getDocs, onSnapshot, orderBy, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { auth, db } from './firebase-client.js';
 import { safeStorage } from './storage.js';
 
@@ -364,9 +364,9 @@ function updateCartBadge() {
 // ========================================
 function setupNotifications() {
     const notifBtn = document.getElementById('notif-btn');
-    const dropdown = document.getElementById('notification-dropdown') || document.getElementById('notif-dropdown');
+    const dropdown = document.getElementById('notification-dropdown');
     const markAllRead = document.getElementById('mark-all-read');
-    const notifList = document.getElementById('notification-list') || document.getElementById('notif-list');
+    const notifList = document.getElementById('notification-list');
 
     if (!notifBtn || !dropdown) return;
     closeNotificationDropdown(dropdown, notifBtn);
@@ -376,11 +376,9 @@ function setupNotifications() {
         const willOpen = !isNotificationDropdownOpen(dropdown);
         if (willOpen) {
             openNotificationDropdown(dropdown, notifBtn);
+            await markAllNotificationsRead();
         } else {
             closeNotificationDropdown(dropdown, notifBtn);
-        }
-        if (willOpen) {
-            await markAllNotificationsRead();
         }
     });
 
@@ -402,40 +400,32 @@ function setupNotifications() {
         if (!id) return;
 
         await markSingleNotificationRead(id);
-        const targetUrl = String(item.getAttribute('data-target-url') || '').trim();
-        if (targetUrl) {
-            window.location.href = targetUrl;
-        }
+        window.location.href = 'profile.html';
     });
 
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, (user) => {
         cleanupNotificationSubscriptions();
         notificationState.itemsById.clear();
         renderNotifications([]);
         if (!user) return;
 
-        const phone = await resolveUserPhone(user.uid);
-        const sources = [query(collection(db, 'notifications'), where('userId', '==', user.uid))];
-        if (phone) {
-            sources.push(query(collection(db, 'notifications'), where('userPhone', '==', phone)));
-        }
+        // Real-time stream: only notifications for current user, newest first.
+        const notificationsQuery = query(
+            collection(db, 'notifications'),
+            where('userId', '==', String(user.uid)),
+            orderBy('createdAt', 'desc')
+        );
 
-        sources.forEach((sourceQuery) => {
-            const unsubscribe = onSnapshot(sourceQuery, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    const docSnap = change.doc;
-                    if (change.type === 'removed') {
-                        notificationState.itemsById.delete(docSnap.id);
-                        return;
-                    }
-                    notificationState.itemsById.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
-                });
-                renderNotifications(Array.from(notificationState.itemsById.values()));
-            }, (error) => {
-                console.error('Notification listener failed:', error);
+        const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+            notificationState.itemsById.clear();
+            snapshot.docs.forEach((docSnap) => {
+                notificationState.itemsById.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
             });
-            notificationState.unsubscribers.push(unsubscribe);
+            renderNotifications(Array.from(notificationState.itemsById.values()));
+        }, (error) => {
+            console.error('Notification listener failed:', error);
         });
+        notificationState.unsubscribers.push(unsubscribe);
     });
 }
 
@@ -474,17 +464,17 @@ function updateBadgeCount(unreadCount) {
 }
 
 function renderNotifications(items) {
-    const list = document.getElementById('notification-list') || document.getElementById('notif-list');
+    const list = document.getElementById('notification-list');
     if (!list) return;
-    const sorted = [...items].sort((a, b) => getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt));
+    const sorted = [...items];
     list.innerHTML = '';
 
     if (!sorted.length) {
         list.innerHTML = `
             <div class="notif-empty-state" role="status" aria-live="polite">
                 <span class="material-icons-outlined notif-empty-state__icon" aria-hidden="true">notifications_none</span>
-                <p class="notif-empty-state__title">No new notifications</p>
-                <p class="notif-empty-state__hint">We will notify you when your reservation status changes.</p>
+                <p class="notif-empty-state__title">No notifications yet</p>
+                <p class="notif-empty-state__hint">You will see reservation updates here.</p>
             </div>
         `;
         updateBadgeCount(0);
@@ -493,52 +483,50 @@ function renderNotifications(items) {
 
     let unreadCount = 0;
     sorted.forEach((item) => {
-        const unread = item.read !== true;
-        const status = String(item.status || '').trim().toLowerCase();
-        const statusClass = status === 'approved' ? ' notif-approved' : status === 'rejected' ? ' notif-rejected' : '';
+        const unread = item.isRead !== true;
+        const type = String(item.type || '').trim().toLowerCase();
+        const isApproved = type === 'approved';
+        const title = isApproved ? 'Reservation Approved' : 'Reservation Rejected';
+        const body = isApproved
+            ? `Your request for ${String(item.bookTitle || 'this book')} is ready.`
+            : `Your request for ${String(item.bookTitle || 'this book')} was declined. Reason: ${String(item.reason || 'Not specified')}.`;
+        const icon = isApproved ? '✅' : '❌';
+        const typeClass = isApproved ? 'notif-approved' : 'notif-rejected';
         if (unread) unreadCount += 1;
         const node = document.createElement('div');
-        node.className = `notif-item${unread ? ' unread' : ''}${statusClass}`;
+        node.className = `notif-item ${typeClass}${unread ? ' unread' : ' read'}`;
         node.setAttribute('data-id', String(item.id || ''));
-        if (item.targetUrl) node.setAttribute('data-target-url', String(item.targetUrl));
         node.innerHTML = `
-            <div class="notif-item__title">${escapeHtml(String(item.title || getNotificationFallbackTitle(status)))}</div>
-            <div class="notif-item__body">${escapeHtml(String(item.body || getNotificationFallbackBody(status)))}</div>
-            <div class="notif-item__time">${formatNotifTime(item.createdAt)}</div>
+            <span class="notif-item__dot" aria-hidden="true"></span>
+            <div class="notif-item__icon" aria-hidden="true">${icon}</div>
+            <div class="notif-item__content">
+                <div class="notif-item__title">${escapeHtml(title)}</div>
+                <div class="notif-item__body">${escapeHtml(body)}</div>
+                <div class="notif-item__time">${timeAgo(item.createdAt)}</div>
+            </div>
         `;
         list.appendChild(node);
     });
     updateBadgeCount(unreadCount);
 }
 
-function getNotificationFallbackTitle(status) {
-    if (status === 'approved') return 'Reservation Approved';
-    if (status === 'rejected') return 'Reservation Rejected';
-    return 'Reservation Update';
-}
-
-function getNotificationFallbackBody(status) {
-    if (status === 'approved') return 'The library owner approved your request.';
-    if (status === 'rejected') return 'The library owner rejected your request.';
-    return 'Your reservation status was updated.';
-}
-
 async function markAllNotificationsRead() {
-    const unread = Array.from(notificationState.itemsById.values()).filter((item) => item.read !== true);
+    const unread = Array.from(notificationState.itemsById.values()).filter((item) => item.isRead !== true);
     await Promise.all(unread.map((item) => markSingleNotificationRead(item.id)));
 }
 
 async function markSingleNotificationRead(notificationId) {
     if (!notificationId) return;
     try {
+        // Persist read state so badge and item UI stay in sync across sessions.
         await setDoc(
             doc(db, 'notifications', String(notificationId)),
-            { read: true, readAt: new Date().toISOString() },
+            { isRead: true, readAt: new Date().toISOString() },
             { merge: true }
         );
         const existing = notificationState.itemsById.get(notificationId);
         if (existing) {
-            notificationState.itemsById.set(notificationId, { ...existing, read: true });
+            notificationState.itemsById.set(notificationId, { ...existing, isRead: true });
             renderNotifications(Array.from(notificationState.itemsById.values()));
         }
     } catch (error) {
@@ -553,26 +541,6 @@ function cleanupNotificationSubscriptions() {
     notificationState.unsubscribers = [];
 }
 
-async function resolveUserPhone(uid) {
-    const cached = safeStorage.get('user');
-    if (cached) {
-        try {
-            const parsed = JSON.parse(cached) || {};
-            const phone = String(parsed.phone || '').trim();
-            if (phone) return phone;
-        } catch {}
-    }
-    if (!uid) return '';
-    try {
-        const userSnap = await getDoc(doc(db, 'users', uid));
-        const data = userSnap.exists() ? userSnap.data() || {} : {};
-        const phone = String(data.phone || '').trim();
-        return phone;
-    } catch {
-        return '';
-    }
-}
-
 function getTimestampMs(value) {
     if (!value) return 0;
     if (typeof value.toMillis === 'function') return value.toMillis();
@@ -581,10 +549,24 @@ function getTimestampMs(value) {
     return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function formatNotifTime(value) {
+function timeAgo(value) {
     const ms = getTimestampMs(value);
-    if (!ms) return '';
-    return new Date(ms).toLocaleString();
+    if (!ms) return 'Just now';
+    const diff = Date.now() - ms;
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    if (diff < minute) return 'Just now';
+    if (diff < hour) {
+        const valueInMinutes = Math.max(1, Math.floor(diff / minute));
+        return `${valueInMinutes} minute${valueInMinutes > 1 ? 's' : ''} ago`;
+    }
+    if (diff < day) {
+        const valueInHours = Math.max(1, Math.floor(diff / hour));
+        return `${valueInHours} hour${valueInHours > 1 ? 's' : ''} ago`;
+    }
+    const valueInDays = Math.max(1, Math.floor(diff / day));
+    return `${valueInDays} day${valueInDays > 1 ? 's' : ''} ago`;
 }
 
 // ========================================
