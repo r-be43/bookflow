@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "link:covers": "node scripts/link-book-covers.mjs",
+    "audit:genres": "node scripts/audit-distribute-genres.mjs"
   },
   "keywords": [],
   "author": "",

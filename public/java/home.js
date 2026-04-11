@@ -30,7 +30,8 @@ let selectedCategory = 'All';
 let currentSearchTerm = '';
 let searchDebounce = null;
 let booksLoaded = false;
-const ROW_IDS = ['row-popular', 'row-world', 'row-new', 'row-history'];
+let availableCategories = [...CATEGORIES];
+let forceGridMode = false;
 const notificationState = {
     itemsById: new Map(),
     unsubscribers: [],
@@ -62,6 +63,8 @@ async function initHomePage() {
 
     try {
         booksList = await fetchBooksFromCloud();
+        console.log('Total books rendered: ', booksList.length);
+        availableCategories = buildAvailableCategories(booksList);
         booksLoaded = true;
         renderCategoryChips();
         setupCategories();
@@ -76,18 +79,23 @@ async function initHomePage() {
 }
 
 function isBrowsingRowsMode() {
-    return !currentSearchTerm && selectedCategory === 'All';
+    return !forceGridMode && !currentSearchTerm && selectedCategory === 'All';
 }
 
 function renderHomeRows() {
-    const rowData = {
-        'row-popular': getMostPopular(booksList, 18),
-        'row-world': getWorldLiteratureBooks(booksList, 18),
-        'row-new': getNewReleases(booksList, 18),
-        'row-history': getHistoryAndThoughtBooks(booksList, 18),
-    };
-    ROW_IDS.forEach((rowId) => {
-        renderHorizontalRow(rowId, rowData[rowId] || []);
+    const wrapper = document.getElementById('home-rows-wrapper');
+    if (!wrapper) return;
+    wrapper.innerHTML = '';
+
+    const sections = buildStreamingSections(booksList);
+    if (!sections.length) {
+        wrapper.innerHTML = '<div class="no-books-found">No books found</div>';
+        toggleHomeMode(true);
+        return;
+    }
+
+    sections.forEach((section) => {
+        wrapper.appendChild(createCategorySection(section.title, section.tag, section.books));
     });
     toggleHomeMode(true);
 }
@@ -138,6 +146,61 @@ function renderHorizontalRow(containerId, books) {
     books.forEach((book) => {
         container.appendChild(createBookCard(book));
     });
+}
+
+function createCategorySection(title, tag, books) {
+    const section = document.createElement('section');
+    section.className = 'category-section horizontal-row-section';
+
+    const header = document.createElement('div');
+    header.className = 'section-header section-header--premium';
+    header.innerHTML = `
+        <h2>${escapeHtml(title)}</h2>
+        <span class="section-tag section-tag--muted">${escapeHtml(tag || 'Category')}</span>
+    `;
+
+    const row = document.createElement('div');
+    row.className = 'books-row';
+    books.forEach((book) => row.appendChild(createBookCard(book)));
+
+    section.appendChild(header);
+    section.appendChild(row);
+    return section;
+}
+
+function buildStreamingSections(books) {
+    const source = Array.isArray(books) ? books : [];
+    const sections = [];
+
+    const topRated = getMostPopular(source, 18);
+    if (topRated.length) sections.push({ title: 'Top Rated', tag: 'Trending', books: topRated });
+
+    const newReleases = getNewReleases(source, 18);
+    if (newReleases.length) sections.push({ title: 'New Releases', tag: 'Latest', books: newReleases });
+
+    const history = getHistoryAndThoughtBooks(source, 18);
+    if (history.length) sections.push({ title: 'History', tag: 'Featured', books: history });
+
+    const groups = new Map();
+    source.forEach((book) => {
+        const category = normalizeCategory(book.category || book.genre || 'General');
+        if (!category) return;
+        if (!groups.has(category)) groups.set(category, []);
+        groups.get(category).push(book);
+    });
+
+    [...groups.entries()]
+        .sort((a, b) => b[1].length - a[1].length)
+        .slice(0, 8)
+        .forEach(([category, items]) => {
+            sections.push({
+                title: category,
+                tag: `${items.length} titles`,
+                books: items.slice(0, 18),
+            });
+        });
+
+    return sections;
 }
 
 // ========================================
@@ -305,7 +368,7 @@ function renderCategoryChips() {
 
     container.innerHTML = '';
 
-    CATEGORIES.forEach((category) => {
+    availableCategories.forEach((category) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = `category-chip category-btn${category === 'All' ? ' active' : ''}`;
@@ -325,6 +388,7 @@ function setupCategories() {
             btn.classList.add('active');
 
             selectedCategory = btn.getAttribute('data-category') || btn.innerText || 'All';
+            forceGridMode = true;
             runSearchAndFilter();
         });
     });
@@ -629,12 +693,15 @@ async function fetchBooksFromCloud() {
         const data = docSnap.data() || {};
         const resolvedId = data.id ?? docSnap.id;
         const coverUrl = data.coverUrl || data.cover || data.image || '';
+        const resolvedCategory = String(data.category || data.genre || 'General').trim();
+        const resolvedGenre = String(data.genre || data.category || '').trim();
         return {
             id: resolvedId,
             cloudId: docSnap.id,
             title: data.title || '',
             author: data.author || '',
-            category: data.category || 'General',
+            category: resolvedCategory,
+            genre: resolvedGenre,
             image: coverUrl,
             description: data.description || '',
             rating: Number(data.rating || 0),
@@ -676,7 +743,8 @@ function searchInBooks(books, query) {
     return books.filter((book) =>
         String(book.title || '').toLowerCase().includes(searchTerm) ||
         String(book.author || '').toLowerCase().includes(searchTerm) ||
-        String(book.category || '').toLowerCase().includes(searchTerm)
+        String(book.category || '').toLowerCase().includes(searchTerm) ||
+        String(book.genre || '').toLowerCase().includes(searchTerm)
     );
 }
 
@@ -726,7 +794,28 @@ function normalizeCategory(dbCategory) {
 function filterByCategoryList(books, category) {
     const normalizedCategory = String(category || 'All').trim();
     if (normalizedCategory === 'All') return books;
-    return books.filter((book) => normalizeCategory(book.category) === normalizedCategory);
+    return books.filter((book) => {
+        const resolvedCategory = normalizeCategory(book.category || book.genre);
+        return String(resolvedCategory).toLowerCase() === normalizedCategory.toLowerCase();
+    });
+}
+
+function buildAvailableCategories(books) {
+    const source = Array.isArray(books) ? books : [];
+    const discovered = new Set();
+    source.forEach((book) => {
+        const normalized = normalizeCategory(book.category || book.genre);
+        if (normalized) discovered.add(normalized);
+    });
+
+    const next = ['All'];
+    CATEGORIES.filter((cat) => cat !== 'All').forEach((cat) => {
+        if (discovered.has(cat)) next.push(cat);
+    });
+    [...discovered].forEach((cat) => {
+        if (!next.includes(cat)) next.push(cat);
+    });
+    return next;
 }
 
 function getTrendingBooks(books) {

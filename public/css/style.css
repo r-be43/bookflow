@@ -541,6 +541,12 @@ body.mobile-premium-page .premium-page-main {
     margin-bottom: var(--space-md);
 }
 
+.category-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .horizontal-scroll-container {
     display: flex;
     overflow-x: auto;
@@ -565,6 +571,32 @@ body.mobile-premium-page .premium-page-main {
     min-width: 160px !important;
     max-width: 180px !important;
     flex: 0 0 auto;
+    scroll-snap-align: start;
+}
+
+.books-row {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    gap: 16px;
+    padding: 6px 4px 10px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.books-row::-webkit-scrollbar {
+    display: none;
+}
+
+.books-row {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.books-row .book-card.book-card--premium {
+    flex: 0 0 auto;
+    min-width: 160px !important;
+    max-width: 180px !important;
     scroll-snap-align: start;
 }
 
