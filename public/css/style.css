@@ -590,6 +590,14 @@ body.mobile-premium-page .premium-page-main {
     display: none !important;
 }
 
+#home-rows-wrapper[hidden] {
+    display: none !important;
+}
+
+#home-rows-wrapper[hidden] {
+    display: none !important;
+}
+
 .top-nav--premium {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);

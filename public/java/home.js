@@ -27,6 +27,7 @@ const CATEGORIES = [
 let selectedCategory = 'All';
 let currentSearchTerm = '';
 let searchDebounce = null;
+let booksLoaded = false;
 const ROW_IDS = ['row-popular', 'row-world', 'row-new', 'row-history'];
 const notificationState = {
     itemsById: new Map(),
@@ -55,13 +56,15 @@ async function initHomePage() {
     setupBottomNav();
     setupNotifications();
     setupCartBadge();
+    setupSearch();
 
     try {
         booksList = await fetchBooksFromCloud();
+        booksLoaded = true;
         renderCategoryChips();
-        setupSearch();
         setupCategories();
-        renderHomeRows();
+        syncSearchTermFromInput();
+        await runSearchAndFilter();
     } catch (error) {
         console.error('Failed to fetch books from Firestore:', error);
         showToast('Could not load catalog. Please refresh.', 'error');
@@ -262,14 +265,16 @@ async function toggleFavorite(bookId, iconElement) {
 // إعداد البحث
 // ========================================
 function setupSearch() {
-    const searchInput = document.getElementById('search-input');
+    const searchInput = getSearchInputElement();
     if (!searchInput) return;
+    if (searchInput.dataset.homeSearchBound === '1') return;
+    searchInput.dataset.homeSearchBound = '1';
 
     searchInput.addEventListener('input', (e) => {
         currentSearchTerm = String(e.target.value || '').trim();
         if (searchDebounce) clearTimeout(searchDebounce);
         searchDebounce = setTimeout(() => {
-            runSearchAndFilter();
+            void runSearchAndFilter();
         }, 300);
     });
 
@@ -277,7 +282,7 @@ function setupSearch() {
         if (event.key !== 'Enter') return;
         event.preventDefault();
         if (searchDebounce) clearTimeout(searchDebounce);
-        runSearchAndFilter();
+        void runSearchAndFilter();
     });
 }
 
@@ -316,6 +321,7 @@ function setupCategories() {
 }
 
 async function runSearchAndFilter() {
+    if (!booksLoaded) return;
     showHomeLoading(true);
     if (isBrowsingRowsMode()) {
         renderHomeRows();
@@ -328,6 +334,16 @@ async function runSearchAndFilter() {
     toggleHomeMode(false);
     renderBookGridByElement(filtered, document.getElementById('search-results-grid'));
     showHomeLoading(false);
+}
+
+function syncSearchTermFromInput() {
+    const searchInput = getSearchInputElement();
+    if (!searchInput) return;
+    currentSearchTerm = String(searchInput.value || '').trim();
+}
+
+function getSearchInputElement() {
+    return document.querySelector('#search-input, .search-bar-premium__input');
 }
 
 // ========================================
@@ -645,7 +661,8 @@ function renderBookGridByElement(books, container) {
 }
 
 function searchInBooks(books, query) {
-    const searchTerm = String(query || '').toLowerCase();
+    const searchTerm = String(query || '').trim().toLowerCase();
+    if (!searchTerm) return books;
     return books.filter((book) =>
         String(book.title || '').toLowerCase().includes(searchTerm) ||
         String(book.author || '').toLowerCase().includes(searchTerm) ||
@@ -697,8 +714,9 @@ function normalizeCategory(dbCategory) {
 }
 
 function filterByCategoryList(books, category) {
-    if (category === 'All') return books;
-    return books.filter((book) => normalizeCategory(book.category) === category);
+    const normalizedCategory = String(category || 'All').trim();
+    if (normalizedCategory === 'All') return books;
+    return books.filter((book) => normalizeCategory(book.category) === normalizedCategory);
 }
 
 function getTrendingBooks(books) {
