@@ -12,6 +12,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { auth, db } from './firebase-client.js';
+import { BOOK_COVER_ONERROR, getBookCoverAttrs } from './cover-utils.js';
 import { safeStorage } from './storage.js';
 import { getVendorProfileById } from './vendors-firestore-service.js';
 
@@ -84,7 +85,10 @@ function displayBookDetails(book) {
 
     const img = document.getElementById('detail-img');
     if (img) {
-        img.outerHTML = `<img id="detail-img" class="details-cover__img" src="${book.image}" alt="${book.title}" onerror="this.onerror=null; this.src='https://placehold.co/300x450/eeeeee/999999?text=No+Cover';">`;
+        const coverAttrs = getBookCoverAttrs(book.title);
+        const coverFace = document.querySelector('.book-cover-face');
+        coverFace?.classList.remove('no-cover');
+        img.outerHTML = `<img id="detail-img" class="details-cover__img" src="${escapeHtml(coverAttrs.src)}" alt="${escapeHtml(book.title)}" data-cover-fallbacks="${escapeHtml(coverAttrs.fallbacks)}" onerror="${BOOK_COVER_ONERROR}">`;
     }
 
     const catEl = document.getElementById('detail-category');
@@ -191,12 +195,14 @@ function createRelatedBookCard(book) {
     const card = document.createElement('a');
     card.href = `details.html?id=${encodeURIComponent(normalizeBookId(book.id))}`;
     card.className = 'book-card book-card--premium related-book-card';
+    const coverAttrs = getBookCoverAttrs(book.title);
     card.innerHTML = `
         <div class="book-card__cover-wrap">
             <img class="book-card__cover"
-                 src="${escapeHtml(book.image)}"
+                 src="${escapeHtml(coverAttrs.src)}"
                  alt="${escapeHtml(book.title)}"
-                 onerror="this.onerror=null; this.src='https://placehold.co/300x450/eeeeee/999999?text=No+Cover';">
+                 data-cover-fallbacks="${escapeHtml(coverAttrs.fallbacks)}"
+                 onerror="${BOOK_COVER_ONERROR}">
         </div>
         <div class="book-card__body">
             <h3>${escapeHtml(book.title)}</h3>
@@ -370,12 +376,14 @@ function openReserveModal(book) {
     populateModalLibraryField(book);
 
     const modalCover = document.getElementById('modal-book-cover');
-    modalCover.src = book.image;
+    const modalCoverWrap = modalCover?.closest('.book-preview__cover');
+    modalCoverWrap?.classList.remove('no-cover');
+    const modalCoverAttrs = getBookCoverAttrs(book.title);
+    modalCover.style.display = '';
+    modalCover.src = modalCoverAttrs.src;
     modalCover.alt = book.title;
-    modalCover.onerror = () => {
-        modalCover.onerror = null;
-        modalCover.src = 'https://via.placeholder.com/150x210?text=No+Cover';
-    };
+    modalCover.dataset.coverFallbacks = modalCoverAttrs.fallbacks;
+    modalCover.setAttribute('onerror', BOOK_COVER_ONERROR);
     document.getElementById('modal-book-title').textContent = book.title;
     document.getElementById('modal-book-author').textContent = book.author;
 

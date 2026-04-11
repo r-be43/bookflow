@@ -7,6 +7,7 @@ import {
     fetchBooksByVendorId,
     updateBookById,
 } from './books-firestore-service.js';
+import { BOOK_COVER_ONERROR, getBookCoverAttrs } from './cover-utils.js';
 import { deleteVendorById, getAllVendors, updateVendorStatus } from './vendors-firestore-service.js';
 
 const SESSION_KEY = 'superAdminAuthenticated';
@@ -149,9 +150,17 @@ function formatPrice(value) {
     return String(value || '--');
 }
 
+function escapeAttr(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 function createRecentRow(book) {
     const row = document.createElement('tr');
-    const safeImage = book.coverUrl || book.image || 'https://placehold.co/48x64/e2e8f0/111827?text=B';
+    const coverAttrs = getBookCoverAttrs(book.title);
     const title = String(book.title || 'Untitled');
     const author = String(book.author || 'Unknown Author');
     const vendorPhone = String(book.vendorPhone || '--');
@@ -168,7 +177,9 @@ function createRecentRow(book) {
         </td>
         <td>
             <div class="book-cell">
-                <img src="${safeImage}" alt="${title}" onerror="this.onerror=null; this.src='https://placehold.co/48x64/e2e8f0/111827?text=B';">
+                <div class="book-cell-cover-wrap">
+                    <img src="${escapeAttr(coverAttrs.src)}" alt="${escapeAttr(title)}" data-cover-fallbacks="${escapeAttr(coverAttrs.fallbacks)}" onerror="${BOOK_COVER_ONERROR}">
+                </div>
                 <div>
                     <strong></strong>
                     <small></small>

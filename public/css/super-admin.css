@@ -501,6 +501,16 @@ body.sa-theme-dark {
     gap: 10px;
 }
 
+.book-cell-cover-wrap {
+    width: 42px;
+    height: 58px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    background: #eef2f7;
+    flex-shrink: 0;
+}
+
 .book-cell img {
     width: 42px;
     height: 58px;

@@ -11,6 +11,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { auth, db } from './firebase-client.js';
+import { BOOK_COVER_ONERROR, getBookCoverAttrs } from './cover-utils.js';
 import { getVendorProfileById } from './vendors-firestore-service.js';
 
 const state = {
@@ -345,11 +346,13 @@ function renderInventory() {
 
     pageBooks.forEach((book) => {
         const tr = document.createElement('tr');
-        const cover = String(book.coverUrl || book.image || 'https://placehold.co/44x60/e2e8f0/475569?text=B');
+        const coverAttrs = getBookCoverAttrs(book.title);
         tr.innerHTML = `
             <td>
                 <div class="ad-book">
-                    <img src="${cover}" alt="${escapeHtml(String(book.title || 'Book'))}">
+                    <div class="ad-book-cover-wrap">
+                        <img src="${escapeHtml(coverAttrs.src)}" alt="${escapeHtml(String(book.title || 'Book'))}" data-cover-fallbacks="${escapeHtml(coverAttrs.fallbacks)}" onerror="${BOOK_COVER_ONERROR}">
+                    </div>
                     <div>
                         <strong>${escapeHtml(String(book.title || 'Untitled'))}</strong><br>
                         <small>${escapeHtml(String(book.author || 'Unknown author'))}</small>

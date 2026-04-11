@@ -6,6 +6,7 @@ import {
     query,
     where
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { BOOK_COVER_ONERROR, getBookCoverAttrs } from './cover-utils.js';
 import { db } from './firebase-client.js';
 import { safeStorage } from './storage.js';
 
@@ -113,13 +114,14 @@ function createFavoriteCard(book) {
     card.dataset.bookId = bookId;
 
     const stars = renderRatingStarsRow(book.rating);
+    const coverAttrs = getBookCoverAttrs(book.title);
 
     card.innerHTML = `
         <div class="fav-icon active" data-book-id="${escapeAttr(bookId)}" aria-label="Remove favorite">
             <span class="material-icons-outlined">favorite</span>
         </div>
         <div class="book-card__cover-wrap">
-            <img class="book-card__cover" src="${book.image}" alt="${book.title}" onerror="this.onerror=null; this.src='https://placehold.co/300x450/eeeeee/999999?text=No+Cover';">
+            <img class="book-card__cover" src="${escapeAttr(coverAttrs.src)}" alt="${escapeAttr(book.title)}" data-cover-fallbacks="${escapeAttr(coverAttrs.fallbacks)}" onerror="${BOOK_COVER_ONERROR}">
         </div>
         <div class="book-card__body">
             <h3>${escapeHtml(truncateText(book.title, 52))}</h3>

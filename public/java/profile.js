@@ -1,6 +1,7 @@
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { collection, doc, getDoc, getDocs, onSnapshot, query, where } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { auth, db } from './firebase-client.js';
+import { BOOK_COVER_ONERROR, getBookCoverAttrs } from './cover-utils.js';
 import { safeStorage } from './storage.js';
 
 const PROCESSED_STATUSES = new Set(['approved', 'rejected', 'completed', 'cancelled', 'picked_up', 'picked up']);
@@ -210,9 +211,12 @@ function renderReserved(items) {
             const node = document.createElement('div');
             const status = normalizeStatus(reservation.status || 'pending');
             const book = resolveBookFromReservation(reservation);
+            const coverAttrs = getBookCoverAttrs(book.title);
             node.className = 'reservation-item';
             node.innerHTML = `
-                <img src="${escapeHtml(book.image || 'https://placehold.co/60x90?text=No+Image')}" alt="${escapeHtml(book.title)}" onerror="this.src='https://placehold.co/60x90?text=No+Image'">
+                <div class="reservation-book-cover-wrap">
+                    <img src="${escapeHtml(coverAttrs.src)}" alt="${escapeHtml(book.title)}" data-cover-fallbacks="${escapeHtml(coverAttrs.fallbacks)}" onerror="${BOOK_COVER_ONERROR}">
+                </div>
                 <div class="reservation-info">
                     <h4>${escapeHtml(truncate(book.title, 35))}</h4>
                     <p class="res-author">${escapeHtml(book.author)}</p>
@@ -231,8 +235,11 @@ function createBookCard(book) {
     const card = document.createElement('div');
     card.className = 'mini-book-card';
     const id = String(book.id || book.docId || '').trim();
+    const coverAttrs = getBookCoverAttrs(book.title);
     card.innerHTML = `
-        <img src="${escapeHtml(book.image || 'https://placehold.co/100x150?text=No+Image')}" alt="${escapeHtml(book.title)}" onerror="this.src='https://placehold.co/100x150?text=No+Image'">
+        <div class="mini-book-cover-wrap">
+            <img src="${escapeHtml(coverAttrs.src)}" alt="${escapeHtml(book.title)}" data-cover-fallbacks="${escapeHtml(coverAttrs.fallbacks)}" onerror="${BOOK_COVER_ONERROR}">
+        </div>
         <p>${escapeHtml(truncate(book.title, 24))}</p>
     `;
     card.addEventListener('click', () => {
@@ -246,10 +253,13 @@ function createHistoryCard(reservation) {
     const book = resolveBookFromReservation(reservation);
     const status = normalizeStatus(reservation.status);
     const statusClass = status === 'approved' ? 'profile-status--approved' : status === 'rejected' ? 'profile-status--rejected' : 'profile-status--neutral';
+    const coverAttrs = getBookCoverAttrs(book.title);
     const node = document.createElement('div');
     node.className = 'history-book-card';
     node.innerHTML = `
-        <img src="${escapeHtml(book.image || 'https://placehold.co/100x150?text=No+Image')}" alt="${escapeHtml(book.title)}" onerror="this.src='https://placehold.co/100x150?text=No+Image'">
+        <div class="history-book-cover-wrap">
+            <img src="${escapeHtml(coverAttrs.src)}" alt="${escapeHtml(book.title)}" data-cover-fallbacks="${escapeHtml(coverAttrs.fallbacks)}" onerror="${BOOK_COVER_ONERROR}">
+        </div>
         <p>${escapeHtml(truncate(book.title, 26))}</p>
         <span class="profile-status-badge ${statusClass}">${escapeHtml(toTitle(status || 'processed'))}</span>
     `;

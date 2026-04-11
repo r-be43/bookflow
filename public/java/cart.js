@@ -1,5 +1,6 @@
 import { addDoc, collection, getDocs, limit, query, serverTimestamp, where } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { auth, db } from './firebase-client.js';
+import { BOOK_COVER_ONERROR, getBookCoverAttrs } from './cover-utils.js';
 import { safeStorage } from './storage.js';
 
 const CART_KEY = 'cartItems';
@@ -83,9 +84,12 @@ function renderCart() {
 function createCartItemElement(item) {
     const element = document.createElement('article');
     element.className = 'cart-item-card';
+    const coverAttrs = getBookCoverAttrs(item.title);
     element.innerHTML = `
-        <img src="${escapeHtml(item.image || '')}" alt="${escapeHtml(item.title || 'Book')}" class="cart-item-cover"
-             onerror="this.onerror=null; this.src='https://placehold.co/180x270/eeeeee/999999?text=No+Cover';">
+        <div class="cart-item-cover-wrap">
+            <img src="${escapeHtml(coverAttrs.src)}" alt="${escapeHtml(item.title || 'Book')}" class="cart-item-cover" data-cover-fallbacks="${escapeHtml(coverAttrs.fallbacks)}"
+                 onerror="${BOOK_COVER_ONERROR}">
+        </div>
         <div class="cart-item-content">
             <h4>${escapeHtml(item.title || 'Untitled')}</h4>
             <p class="cart-item-meta">${escapeHtml(item.author || 'Unknown author')}</p>
