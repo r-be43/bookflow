@@ -7,6 +7,7 @@ import {
     where
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { BOOK_COVER_ONERROR, getBookCoverAttrs } from './cover-utils.js';
+import { normalizeFavoriteIds } from './favorites-utils.js';
 import { db } from './firebase-client.js';
 import { safeStorage } from './storage.js';
 
@@ -211,18 +212,6 @@ function chunkArray(items, size) {
         chunks.push(items.slice(i, i + size));
     }
     return chunks;
-}
-
-function normalizeFavoriteIds(ids) {
-    const seen = new Set();
-    const normalized = [];
-    (Array.isArray(ids) ? ids : []).forEach((value) => {
-        const id = normalizeBookId(value);
-        if (!id || seen.has(id)) return;
-        seen.add(id);
-        normalized.push(id);
-    });
-    return normalized;
 }
 
 function normalizeBookId(id) {

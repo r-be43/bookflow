@@ -7,6 +7,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { auth, db } from './firebase-client.js';
+import { normalizeFavoriteIds } from './favorites-utils.js';
 import { safeStorage } from './storage.js';
 import { getVendorProfileById } from './vendors-firestore-service.js';
 
@@ -255,16 +256,6 @@ function getLocalFavorites() {
     } catch {
         return [];
     }
-}
-
-function normalizeFavoriteIds(input) {
-    const source = Array.isArray(input) ? input : [];
-    const unique = new Set();
-    source.forEach((value) => {
-        const id = Number.parseInt(value, 10);
-        if (Number.isFinite(id) && id > 0) unique.add(id);
-    });
-    return [...unique];
 }
 
 function valueOf(id) {

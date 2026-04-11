@@ -3,6 +3,7 @@ import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/f
 import { collection, doc, getDocs, onSnapshot, orderBy, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { auth, db } from './firebase-client.js';
 import { BOOK_COVER_ONERROR, getBookCoverAttrs } from './cover-utils.js';
+import { normalizeFavoriteIds } from './favorites-utils.js';
 import { safeStorage } from './storage.js';
 
 let booksList = [];
@@ -254,13 +255,14 @@ async function toggleFavorite(bookId, iconElement) {
         setTimeout(() => iconElement.style.animation = '', 300);
     }
 
-    saveFavorites(favorites);
+    const normalizedFavorites = normalizeFavoriteIds(favorites);
+    saveFavorites(normalizedFavorites);
 
     if (auth.currentUser) {
         try {
             await setDoc(
                 doc(db, 'users', auth.currentUser.uid),
-                { favorites },
+                { favorites: normalizedFavorites },
                 { merge: true }
             );
         } catch (error) {
@@ -782,11 +784,6 @@ function showHomeLoading(isLoading) {
 
 function normalizeBookId(id) {
     return String(id ?? '').trim();
-}
-
-function normalizeFavoriteIds(ids) {
-    const source = Array.isArray(ids) ? ids : [];
-    return Array.from(new Set(source.map((id) => normalizeBookId(id)).filter(Boolean)));
 }
 
 function getCartItems() {

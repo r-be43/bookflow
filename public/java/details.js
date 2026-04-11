@@ -13,6 +13,7 @@ import {
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { auth, db } from './firebase-client.js';
 import { BOOK_COVER_ONERROR, getBookCoverAttrs } from './cover-utils.js';
+import { normalizeFavoriteIds } from './favorites-utils.js';
 import { safeStorage } from './storage.js';
 import { getVendorProfileById } from './vendors-firestore-service.js';
 
@@ -661,14 +662,14 @@ function getFavorites() {
     if (!stored) return [];
     try {
         const parsed = JSON.parse(stored);
-        return Array.isArray(parsed) ? parsed.map((item) => normalizeBookId(item)).filter(Boolean) : [];
+        return Array.isArray(parsed) ? normalizeFavoriteIds(parsed) : [];
     } catch {
         return [];
     }
 }
 
 function saveFavorites(favorites) {
-    const normalized = Array.from(new Set((favorites || []).map((item) => normalizeBookId(item)).filter(Boolean)));
+    const normalized = normalizeFavoriteIds(favorites);
     safeStorage.set('favorites', JSON.stringify(normalized));
     window.dispatchEvent(new CustomEvent('favorites:updated', { detail: { count: normalized.length } }));
 }
